@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cocina</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Evita barras al parpadear */
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: filter 0.2s ease;
+        }
+
+        .game-image {
+            width: 100%;
+            display: block;
+        }
+
+        /* Zonas clickeables (Hotspots) - 0.1 es la transparencia */
+        .hotspot {
+            position: absolute;
+            background-color: rgba(255, 215, 0, 0.1); /* Sutil brillo para pruebas; cámbialo a transparent cuando termines */
+            border: 2px dashed rgba(255, 215, 0, 0.4);
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .hotspot:hover {
+            background-color: rgba(255, 215, 0, 0.35);
+            border-color: rgba(255, 215, 0, 0.9);
+        }
+
+        /* Coordenadas personalizadas según la imagen de la cocina */
+        #pantry { top: 30%; left: 77%; width: 17%; height: 53%; }
+        #knife { top: 30%; left: 0%; width: 15%; height: 35%; }
+        #lamp { top: 0%; left: 47%; width: 8%; height: 25%; }
+        #table { top: 62%; left: 52%; width: 15%; height: 12%; }
+        #stove { top: 60%; left: 23%; width: 26%; height: 36%; }
+
+        /* Estilos del Pop-up (Modal) */
+        .modal {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            max-width: 450px;
+            max-height: 80vh;      /* Limita el alto al 80% de la pantalla */
+            overflow-y: auto;      /* Activa la barra de scroll si el contenido sobrepasa el tamaño */
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            position: relative;
+            text-align: left;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #d4af37;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+text-align: center;
+        }
+
+        .modal-content p {
+            line-height: 1.6;
+            color: #ccc;
+            font-size: 0.95rem;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: #888;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        /* Estilos para el formulario del cajón de la mesa */
+        .drawer-container {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .drawer-input {
+            width: 100%;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+
+
+/* Ocultar flechas del input numérico */
+        .drawer-input::-webkit-outer-spin-button,
+        .drawer-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .drawer-input {
+            -moz-appearance: textfield;
+        }
+
+
+
+
+        .drawer-btn {
+            background-color: #d4af37;
+            color: #121212;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .drawer-btn:hover {
+            background-color: #b89528;
+        }
+
+        .drawer-message {
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .drawer-message.error {
+            color: #ff6b6b;
+        }
+
+        .drawer-img {
+            width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            margin-top: 15px;
+            border-radius: 6px;
+            border: 1px solid #d4af37;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer; /* Añadido para indicar que es clickeable */
+        }
+
+        /* EFECTO DE PARPADEO PROLONGADO DE 3.5 SEGUNDOS */
+        .flicker-long {
+            animation: lightFlickerLong 3.5s steps(1) forwards;
+        }
+
+        @keyframes lightFlickerLong {
+            0%   { opacity: 1; }
+            5%   { opacity: 0; }
+            10%  { opacity: 0.8; }
+            12%  { opacity: 0.05; }
+            20%  { opacity: 1; }
+            28%  { opacity: 0; }
+            35%  { opacity: 0; }
+            42%  { opacity: 0.7; }
+            45%  { opacity: 0.1; }
+            55%  { opacity: 0.9; }
+            62%  { opacity: 0; }
+            75%  { opacity: 0; }
+            82%  { opacity: 0.4; }
+            88%  { opacity: 0.05; }
+            95%  { opacity: 1; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Estilos para el visor de pantalla completa */
+        #fullscreenViewer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 2000; /* Por encima del modal principal */
+            cursor: pointer;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #fullscreenViewer img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+.back-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background-color: #1e1e1e;
+    color: #d4af37;
+    border: 1px solid #d4af37;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1500;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.back-btn:hover {
+    background-color: #d4af37;
+    color: #121212;
+}
+
+    </style>
+</head>
+<body>
+<a href="#" class="back-btn" onclick="volverAlMapa(event)">VOLVER AL SALÓN</a>
+    <div class="game-container" id="gameContainer">
+        <!-- Imagen de fondo -->
+        <img src="images/cocina.jpg" alt="Cocina" class="game-image">
+
+        <!-- Zonas interactivas -->
+        <div class="hotspot" id="pantry" onclick="openPantryModal()"></div>
+        
+	<div class="hotspot" id="knife" onclick="const kitchenAudio = new Audio('audio/kitchen.mp3'); kitchenAudio.play().catch(e => console.log('Error al reproducir audio:', e)); openModal('Menaje', 'Un gran cuchillo de cocina con manchas oscuras en la hoja. Los más paranoicos pensarían que es el arma de un crimen, pero al inspeccionarlo con calma, sólo muestra óxido y restos de grasa seca de comidas anteriores.')"></div>        
+
+        <div class="hotspot" id="lamp" onclick="triggerLampSusto()"></div>
+        
+        <div class="hotspot" id="table" onclick="openTableModal()"></div>
+        
+        <div class="hotspot" id="stove" onclick="openStoveModal()"></div>
+    </div>
+
+    <!-- Estructura del Modal -->
+    <div id="gameModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h3 id="modalTitle">Título</h3>
+            <div id="modalBody">
+                <p id="modalText">Texto de la pista...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nuevo visor de imagen a pantalla completa -->
+    <div id="fullscreenViewer" onclick="closeFullscreen()">
+        <img id="fullscreenImg" src="" alt="Vista a pantalla completa">
+    </div>
+
+    <script>
+        function openModal(title, text) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = `<p id="modalText">${text}</p>`;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        function openPantryModal() {
+            const pickupAudio = new Audio('audio/pickup.mp3');
+            pickupAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+            document.getElementById('modalTitle').innerText = 'Despensa';
+            // Actualizado: Se añade onclick a la imagen para abrir pantalla completa
+            document.getElementById('modalBody').innerHTML = `
+                <p>Al examinar las estanterías, descubres una lista de provisiones fechada a finales de junio donde se indica que el profesor Warren Lecturer almacenaba víveres suficientes para un mes.</p>
+                <p style="margin-top: 15px;">Encuentras una linterna. Introduce su código en tu Inventario "6482".</p>
+                <img src="images/linterna.jpg" alt="Linterna" class="drawer-img" onclick="showFullscreenImage('images/linterna.jpg')" style="cursor:pointer;">
+            `;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        // NUEVA FUNCIÓN: Muestra la imagen a pantalla completa
+        function showFullscreenImage(src) {
+            const viewer = document.getElementById('fullscreenViewer');
+            const img = document.getElementById('fullscreenImg');
+            img.src = src;
+            viewer.style.display = 'flex';
+        }
+
+        // NUEVA FUNCIÓN: Cierra la vista de pantalla completa
+        function closeFullscreen() {
+            const viewer = document.getElementById('fullscreenViewer');
+            viewer.style.display = 'none';
+        }
+
+        function openStoveModal() {
+            const stoveAudio = new Audio('audio/oven.mp3');
+            stoveAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+            document.getElementById('modalTitle').innerText = 'Estufa de hierro';
+            document.getElementById('modalBody').innerHTML = `
+                <p>Una estufa completamente fría y cubierta de ceniza apelmazada. Al tocar la chapa, notas una extraña vibración sutil bajo el suelo. Dentro, alguien ha metido una nota.</p>
+                <img src="images/nota.jpg" alt="Nota" class="drawer-img">
+            `;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        // FUNCIÓN DEL SUSTO PROLONGADO
+        function triggerLampSusto() {
+            const container = document.getElementById('gameContainer');
+            
+            // 1. Sonido de chispazo
+            const sparkAudio = new Audio('audio/spark.mp3'); 
+            sparkAudio.play().catch(e => console.log("Audio no cargado:", e));
+
+            // 2. Activa la animación de 3.5 segundos de parpadeo
+            container.classList.add('flicker-long');
+
+            // 3. Espera 3.5 segundos exactos a que vuelva la luz para mostrar el texto
+            setTimeout(() => {
+                container.classList.remove('flicker-long');
+                
+                openModal(
+                    '¡Bombilla!', 
+                    'Intentas examinar la bombilla y ésta despide un <strong>fuerte chispazo eléctrico</strong>. La estancia se sumerge en una penumbra parpadeante durante unos segundos agónicos... Sientes un aliento gélido pegado a tu nuca, pero al girarte bruscamente, no ves a nadie.'
+                );
+            }, 3500); 
+        }
+
+        function openTableModal() {
+            document.getElementById('modalTitle').innerText = 'Mesita';
+            document.getElementById('modalBody').innerHTML = `
+                <p>Una mesa auxiliar polvorienta. El cajón está cerrado con una cerradura de combinación de 4 dígitos.</p>
+                <div class="drawer-container" id="drawerContainer">
+                    <input type="number" id="drawerCode" class="drawer-input" placeholder="****" min="0" max="9999" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);" autocomplete="off" onkeypress="handleKeyPress(event)">
+                    <button class="drawer-btn" onclick="abrirCajon()">Abrir cajón</button>
+                    <span id="drawerMessage" class="drawer-message"></span>
+                    <img src="images/drawerclosed.jpg" alt="Cajón cerrado" class="drawer-img">
+                </div>
+            `;
+            document.getElementById('gameModal').style.display = 'flex';
+
+            setTimeout(() => {
+                const input = document.getElementById('drawerCode');
+                if (input) input.focus();
+            }, 100);
+        }
+
+        function abrirCajon() {
+            const input = document.getElementById('drawerCode');
+            const msg = document.getElementById('drawerMessage');
+            const container = document.getElementById('drawerContainer');
+            const valor = input.value.trim();
+
+            if (valor === '1348') {
+                const audio = new Audio('audio/opendrawer.mp3');
+                audio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+                container.innerHTML = `
+                    <p style="color: #5cdb95; font-weight: bold; margin-top: 10px;">¡Cajón abierto con éxito! Dentro hay una nota: Abyssi (invocar). Speculum (repeler)</p>
+                    <img src="images/drawer.jpg" alt="Contenido del cajón" class="drawer-img">
+                `;
+            } else {
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+                msg.innerText = 'El cajón permanece cerrado';
+                msg.className = 'drawer-message error';
+                msg.style.display = 'block';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                abrirCajon();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('gameModal').style.display = 'none';
+        }
+
+        // Cierra el modal si se hace clic fuera del contenido
+        window.onclick = function(event) {
+            let modal = document.getElementById('gameModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+function volverAlMapa(event) {
+    event.preventDefault();
+    const doorAudio = new Audio('audio/opendoor.mp3');
+    doorAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+    doorAudio.onended = () => {
+        window.location.href = 'mapa.html';
+    };
+    setTimeout(() => {
+        window.location.href = 'mapa.html';
+    }, 1500);
+}
+
+    </script>
+
+</body>
+</html>

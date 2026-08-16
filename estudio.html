@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estudio Secreto</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .game-image {
+            width: 100%;
+            display: block;
+        }
+
+        /* Zonas clickeables (Hotspots) - Cambiar background a 'transparent' cuando termines de ajustar - 0.1 es la transparencia del hotspot */
+        .hotspot {
+            position: absolute;
+            background-color: rgba(255, 215, 0, 0.1); 
+            border: 2px dashed rgba(255, 215, 0, 0.4);
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+            z-index: 10;
+        }
+
+        .hotspot:hover {
+            background-color: rgba(255, 215, 0, 0.35);
+            border-color: rgba(255, 215, 0, 0.9);
+        }
+
+        /* Coordenadas personalizadas según la imagen del estudio */
+        #news1 { top: 79%; left: 64%; width: 20%; height: 17%; }
+        #news2 { top: 77%; left: 19%; width: 22%; height: 21%; }
+        #centralChest { top: 38%; left: 43%; width: 17%; height: 27%; }
+        #newspapers   { top: 75%; left: 42%; width: 10%; height: 22%; }
+        #ritualCandles{ top: 28%; left: 14%; width: 9%;  height: 38%; }
+        #fakeSafeBox  { top: 62%; left: 63%; width: 12%; height: 9%; }
+        #caveWall     { top: 0%;  left: 30%; width: 40%; height: 30%; }
+        #gramola     { top: 33%;  left: 62%; width: 11%; height: 24%; }
+        #prisma     { top: 49%;  left: 36%; width: 6%; height: 12%; }
+
+
+        /* Trampilla TRAPECIO EN PERSPECTIVA */
+        #trampilla { 
+            top: 80%; 
+            left: 0%; 
+            width: 19%; 
+            height: 12%; 
+            clip-path: polygon(40% 0%, 100% 0%, 70% 100%, 0% 100%);
+        }
+
+
+        /* Estilos del Pop-up (Modal) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            /* Anchura máxima por defecto para texto */
+            max-width: 500px; 
+            box-shadow: 0 5px 25px rgba(0,0,0,0.7);
+            position: relative;
+            text-align: left;
+            transition: max-width 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+
+/* ... (código anterior) ... */
+.modal-content.modal-type-image {
+    max-width: 800px; 
+    padding: 15px;
+    background-color: #1a1a1a;
+}
+
+/* Estilo específico para hacer el pop-up de la pirámide más estrecho */
+#modalContent.modal-type-image:has(#trampillaImage, img[alt="Una extraña pirámide de madera"]) {
+    max-width: 400px; 
+}
+
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #d4af37;
+            font-size: 1.4rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-family: 'Cinzel', serif;
+            text-align: center;
+        }
+
+        /* Estilos para el cuerpo del modal (texto o imagen) */
+        #modalBody p {
+            line-height: 1.7;
+            color: #ccc;
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        /* Estilos para los botones de decisión */
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .modal-btn:hover {
+            background-color: #3a3a3a;
+            border-color: #d4af37;
+            color: #fff;
+        }
+
+        .modal-btn.primary {
+            background-color: #d4af37;
+            color: #121212;
+            border: none;
+        }
+
+        .modal-btn.primary:hover {
+            background-color: #b89528;
+        }
+
+        /* Estilo para la imagen dentro del modal */
+        .modal-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            margin-top: 5px;
+        }
+
+        /* Estilos para el formulario del cerrojo */
+        .lock-container {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .lock-input {
+            width: 100%;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            text-align: center;
+            letter-spacing: 2px;
+            -moz-appearance: textfield;
+        }
+
+        .lock-input::-webkit-outer-spin-button,
+        .lock-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .lock-btn {
+            background-color: #d4af37;
+            color: #121212;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .lock-btn:hover {
+            background-color: #b89528;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2rem;
+            color: #888;
+            cursor: pointer;
+            background: none;
+            border: none;
+            line-height: 1;
+            z-index: 11;
+        }
+
+        .close-btn:hover {
+            color: #d4af37;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background-color: #1e1e1e;
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 4px;
+            z-index: 1500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: #d4af37;
+            color: #121212;
+        }
+    </style>
+</head>
+<body>
+<a href="#" class="back-btn" onclick="volverAlMapa(event)">VOLVER AL SALÓN</a>
+    <div class="game-container">
+        <!-- Imagen de fondo -->
+        <img src="images/estudio.jpg" alt="Estudio secreto" class="game-image">
+
+        <!-- Zonas interactivas -->
+        <div class="hotspot" id="trampilla" onclick="openTrampillaModal()"></div>
+ 
+        <div class="hotspot" id="news1" title="Recorte de La Voz de Arkham" onclick="playOpenBookSound(); openModal('La Voz de Arkham', '', 'images/news1.jpg')"></div>
+        <div class="hotspot" id="news2" title="Recorte de El Faro de Weeds" onclick="playOpenBookSound(); openModal('El Faro de Weeds', '', 'images/news2.jpg')"></div>
+        <div class="hotspot" id="prisma" onclick="playOpenBookSound(); openModal('Una extraña pirámide de madera', '', 'images/prisma.png')"></div>
+
+        <div class="hotspot" id="gramola" onclick="openGramolaModal()"></div>
+
+        <div class="hotspot" id="centralChest" onclick="openModal('Cofre del ritual', 'Un cofre de madera ornamentado que contiene herramientas afiladas y un tomo con el blasón de la universidad. Desprende una extraña energía estática al acercar la mano.')"></div>
+        
+        <div class="hotspot" id="newspapers" title="Cuaderno de notas" onclick="playOpenBookSound(); openModal('Cuaderno de notas del profesor Warren Lecturer', '', 'images/diariofinal.jpg')"></div>
+        
+        <div class="hotspot" id="ritualCandles" onclick="openModal('Candelabros de vela', 'Un juego de velas completamente consumidas alrededor del altar, que desprenden un calor residual antinatural a pesar del frío húmedo de la cueva.')"></div>
+        
+        <div class="hotspot" id="fakeSafeBox" title="Escritos personales" onclick="playOpenBookSound(); openModal('Escritos personales', 'Al revisarlos, descubres que contienen correspondencia personal hablando de deudas económicas de su amigo Gregory Lame.')"></div>        
+
+        <div class="hotspot" id="caveWall" onclick="openModal('Fondo de la cueva y estanterías', 'Hileras interminables de tomos prohibidos excavados directamente en la roca viva de la isla. Las sombras parecen retorcerse sutilmente entre los lomos de los libros.')"></div>
+    </div>
+
+    <!-- Estructura del Modal -->
+    <div id="gameModal" class="modal">
+        <!-- Contenedor del contenido -->
+        <div class="modal-content" id="modalContent">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h3 id="modalTitle">Título</h3>
+            
+            <!-- Contenedor para el cuerpo del modal -->
+            <div id="modalBody">
+                <!-- Aquí irá el texto o la imagen dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isTrampillaUnlocked = localStorage.getItem('estudio_trampilla_unlocked') === 'true';
+
+        const modal = document.getElementById('gameModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+
+        // Pre-cargar el audio para evitar retardos
+        const openBookSound = new Audio('audio/openbook.mp3');
+        const gramolaSound = new Audio('audio/gramola.mp3');
+
+        /**
+         * Reproduce el sonido de abrir libro.
+         */
+        function playOpenBookSound() {
+            openBookSound.currentTime = 0; 
+            openBookSound.play().catch(error => {
+                console.log("Error al reproducir el audio:", error);
+            });
+        }
+
+        /**
+         * Abre el modal específico para la gramola con botones Sí / No.
+         */
+        function openGramolaModal() {
+            modalTitle.innerText = 'Gramola';
+            modalBody.innerHTML = '';
+
+            const p = document.createElement('p');
+            p.innerText = '¿Encender gramola?';
+            modalBody.appendChild(p);
+
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'modal-buttons';
+
+            const btnNo = document.createElement('button');
+            btnNo.className = 'modal-btn';
+            btnNo.innerText = 'No';
+            btnNo.onclick = function() {
+                closeModal();
+            };
+
+            const btnSi = document.createElement('button');
+            btnSi.className = 'modal-btn primary';
+            btnSi.innerText = 'Sí';
+            btnSi.onclick = function() {
+                closeModal();
+                gramolaSound.currentTime = 0;
+                gramolaSound.play().catch(error => {
+                    console.log("Error al reproducir el audio de la gramola:", error);
+                });
+            };
+
+            btnContainer.appendChild(btnNo);
+            btnContainer.appendChild(btnSi);
+            modalBody.appendChild(btnContainer);
+
+            modalContent.classList.remove('modal-type-image');
+            modalContent.style.maxWidth = '';
+            modal.style.display = 'flex';
+        }
+
+        // Función específica para la Trampilla
+        function openTrampillaModal() {
+            modalTitle.innerText = 'Trampilla';
+            if (isTrampillaUnlocked) {
+                modalBody.innerHTML = `
+                    <p>El candado está abierto.</p>
+                    <div class="lock-container">
+                        <button class="lock-btn" onclick="irALaCueva()">Abrir trampilla</button>
+                    </div>
+                `;
+                modalContent.classList.remove('modal-type-image');
+                modalContent.style.maxWidth = '';
+            } else {
+                modalBody.innerHTML = `
+                    <p>Hay una trampilla cerrada con un candado. Para utilizar un objeto, introduzca su código.</p>
+                    <div class="lock-container">
+                        <input type="number" id="trampillaCodeInput" class="lock-input" placeholder="****" min="0" max="9999" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);" onkeypress="handleTrampillaKeyPress(event)" autocomplete="off">
+                        <button class="lock-btn" onclick="verificarCodigoTrampilla()">Usar objeto</button>
+                        <span id="trampillaErrorMessage" class="error-message" style="color: #ff6b6b;">Objeto no válido.</span>
+                    </div>
+                    <img src="images/trampilla.jpg" alt="Trampilla" class="modal-img" id="trampillaImage">
+                `;
+                modalContent.classList.add('modal-type-image');
+                modalContent.style.maxWidth = '500px';
+            }
+            modal.style.display = 'flex';
+        }
+
+        function verificarCodigoTrampilla() {
+            const input = document.getElementById('trampillaCodeInput');
+            const errorMsg = document.getElementById('trampillaErrorMessage');
+            const valor = input.value.trim();
+
+            if (valor === '3782') {
+                errorMsg.style.display = 'none';
+                isTrampillaUnlocked = true;
+                localStorage.setItem('estudio_trampilla_unlocked', 'true');
+
+                const abrircandadoAudio = new Audio('audio/abrircandado.mp3');
+                abrircandadoAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+                modalBody.innerHTML = `
+                    <p>Has abierto el candado.</p>
+                    <div class="lock-container">
+                        <button class="lock-btn" onclick="irALaCueva()">Abrir la trampilla.</button>
+                    </div>
+                `;
+                modalContent.classList.remove('modal-type-image');
+                modalContent.style.maxWidth = '';
+            } else {
+                errorMsg.style.display = 'block';
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            }
+        }
+
+        function handleTrampillaKeyPress(event) {
+            if (event.key === 'Enter') {
+                verificarCodigoTrampilla();
+            }
+        }
+
+        function irALaCueva() {
+            const abrirtrampillaAudio = new Audio('audio/abrirtrampilla.mp3');
+            abrirtrampillaAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            setTimeout(() => {
+                window.location.href = 'cueva.html';
+            }, 1800);
+        }
+
+        /**
+         * Abre el modal configurando título, texto o imagen (o ambos).
+         * @param {string} title - El título del pop-up.
+         * @param {string} text - El texto descriptivo.
+         * @param {string|null} imgSrc - La ruta de la imagen (opcional).
+         */
+        function openModal(title, text, imgSrc = null) {
+            modalTitle.innerText = title;
+            
+            modalBody.innerHTML = '';
+            
+            if (text) {
+                const p = document.createElement('p');
+                p.innerText = text;
+                modalBody.appendChild(p);
+            }
+            
+            if (imgSrc) {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = title;
+                img.className = 'modal-img';
+                
+                // Modificación exclusiva para la pirámide
+                if (imgSrc === 'images/prisma.png') {
+                    img.style.maxWidth = '300px';
+                    img.style.margin = '0 auto';
+                }
+
+                if (text) {
+                    img.style.marginTop = '15px';
+                }
+                modalBody.appendChild(img);
+                modalContent.classList.add('modal-type-image');
+            } else {
+                modalContent.classList.remove('modal-type-image');
+            }
+            
+            modalContent.style.maxWidth = '';
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            setTimeout(() => { 
+                modalBody.innerHTML = ''; 
+                modalContent.style.maxWidth = '';
+            }, 300);
+        }
+
+        // Cerrar modal si se hace clic fuera de la caja de contenido
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Cerrar modal con la tecla Esc
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && modal.style.display === 'flex') {
+                closeModal();
+            }
+        });
+
+        function volverAlMapa(event) {
+            event.preventDefault();
+            const doorAudio = new Audio('audio/opendoor.mp3');
+            doorAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            doorAudio.onended = () => {
+                window.location.href = 'mapa.html';
+            };
+            setTimeout(() => {
+                window.location.href = 'mapa.html';
+            }, 1500);
+        }
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaz</title>
+    <style>
+        :root {
+            --bg-color: #12100e;
+            --sidebar-bg: #191512;
+            --topbar-bg: #16120f;
+            --accent-color: #8c3b2b;
+            --accent-glow: #d4a373;
+            --text-main: #e6dfd5;
+            --text-muted: #9e9587;
+            --border-color: #3b3228;
+            --font-family: 'Courier New', Courier, monospace;
+        }
+
+        @keyframes textBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+            overflow: hidden;
+            background-image: radial-gradient(circle, #1c1713 0%, #0d0a08 100%);
+        }
+
+        /* BARRA LATERAL IZQUIERDA */
+        aside {
+            grid-row: 1 / span 2;
+            grid-column: 1;
+            background-color: var(--sidebar-bg);
+            border-right: 2px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            box-shadow: 6px 0 20px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        /* FOTO DEL INVESTIGADOR MÁS PEQUEÑA Y CLICKEABLE */
+        .player-photo-container {
+            width: 110px;
+            height: 110px;
+            margin: 0 auto;
+            border-radius: 2px;
+            overflow: hidden;
+            border: 3px double var(--border-color);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+            background-color: #000;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .player-photo-container:hover {
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 12px rgba(212, 163, 115, 0.4);
+        }
+
+        .player-photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(0.8) contrast(1.3) brightness(0.85);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border-color);
+            text-align: center;
+        }
+
+        .player-name {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+        }
+
+        .player-profession {
+            font-size: 0.85rem;
+            color: var(--accent-glow);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        /* SECCIÓN DE OBJETIVOS (BOTONES ESTILO LEON359.HTML) */
+        .objectives-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .objectives-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+
+        .objective-btn {
+            background-color: var(--sidebar-bg);
+            border: 1px solid var(--accent-glow);
+            color: var(--accent-glow);
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            padding: 12px 10px;
+            border-radius: 2px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            text-align: left;
+            width: 100%;
+        }
+
+        .objective-btn:hover {
+            background-color: var(--accent-glow);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .objective-btn.locked {
+            opacity: 0.7;
+            border-style: dashed;
+        }
+
+        .objective-btn .obj-icon {
+            font-size: 1.2rem;
+        }
+
+        /* BARRA HORIZONTAL SUPERIOR */
+        header {
+            grid-row: 1;
+            grid-column: 2;
+            background-color: var(--topbar-bg);
+            border-bottom: 2px solid var(--border-color);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 5;
+        }
+
+        .inventory-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .inventory-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-right: 5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* CAJA DE CÓDIGOS + BOTÓN OK */
+        .code-input-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #0f0d0b;
+            border: 1px solid var(--border-color);
+            padding: 4px 8px;
+            border-radius: 2px;
+        }
+
+        .code-input {
+            background: transparent;
+            border: none;
+            color: var(--accent-glow);
+            font-family: var(--font-family);
+            font-size: 1rem;
+            width: 65px;
+            text-align: center;
+            letter-spacing: 2px;
+            outline: none;
+        }
+
+        .code-input::placeholder {
+            color: var(--text-muted);
+            letter-spacing: 3px;
+        }
+
+        .btn-ok {
+            background: #241e19;
+            border: 1px solid var(--border-color);
+            color: var(--accent-glow);
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            font-family: var(--font-family);
+            cursor: pointer;
+            border-radius: 2px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-ok:hover {
+            background: var(--accent-glow);
+            color: #000;
+        }
+
+        .error-msg {
+            font-size: 0.75rem;
+            color: var(--accent-color);
+            white-space: nowrap;
+            font-style: italic;
+        }
+
+        .inventory-slot {
+            width: 50px;
+            height: 50px;
+            background-color: #0f0d0b;
+            border: 2px solid var(--border-color);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+            overflow: hidden;
+        }
+
+        .inventory-slot:hover {
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 10px rgba(212, 163, 115, 0.3);
+        }
+
+        .inventory-slot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        /* ICONO DE DESCARTE DE INVENTARIO */
+        .discard-icon {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background-color: rgba(18, 16, 14, 0.8);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .discard-icon:hover {
+            background-color: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* ÁREA PRINCIPAL: CARGA EL MAPA EN HTML MEDIANTE IFRAME */
+        main {
+            grid-row: 2;
+            grid-column: 2;
+            background-color: var(--bg-color);
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        main iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* VISOR A PANTALLA COMPLETA UNIVERSAL */
+        #fullscreenViewer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        #fullscreenViewer img {
+            max-width: 100vw;
+            max-height: 100vh;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: 3px solid var(--accent-glow);
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+
+        /* MODALES (POPUPS) ESTILO LEON359.HTML */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: #e2d8c3;
+            color: #2c2519;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+            border-radius: 2px;
+            box-shadow: inset 0 0 50px rgba(139, 69, 19, 0.3), 0 0 20px rgba(197, 160, 89, 0.3);
+            position: relative;
+            border: 4px double #4a3c26;
+        }
+
+        .modal-content h2 {
+            color: #4a3c26;
+            text-shadow: none;
+            border-bottom: 1px solid #4a3c26;
+            padding-bottom: 10px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            color: #661010;
+            text-shadow: none;
+            margin-top: 25px;
+            text-align: left;
+            font-size: 1.1rem;
+        }
+
+        .modal-content p, .modal-content ul {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #2c2519;
+            text-align: justify;
+        }
+
+        .modal-content ul {
+            list-style-type: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-left: 0;
+        }
+
+        .modal-content li {
+            position: relative;
+            padding-left: 25px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .modal-content li.info-item {
+            padding-left: 20px;
+        }
+
+        .modal-content li.info-item::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            top: 0px;
+            color: #4a3c26;
+   	font-size: 2rem; /* TAMAÑO DEL PUNTO EN OBJETIVOS */
+            line-height: 1;
+        }
+
+        .modal-content li input[type="checkbox"] {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            accent-color: #8c3b2b;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .modal-content li.completed span.obj-text {
+            text-decoration: line-through;
+            color: #7a6e5d;
+        }
+
+        /* VENTANA DE CONTRASEÑA / CÓDIGO (ESTILO LEON359.HTML) */
+        .password-box {
+            background-color: var(--sidebar-bg);
+            border: 2px solid var(--accent-glow);
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 0 20px #000;
+            position: relative;
+            width: 350px;
+            max-width: 90%;
+            border-radius: 3px;
+        }
+
+        .password-box h2 {
+            font-size: 0.95rem;
+            color: var(--accent-glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .password-box p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+
+        .password-box input {
+            background-color: #0f0d0b;
+            border: 1px solid var(--accent-glow);
+            color: var(--accent-glow);
+            padding: 10px;
+            font-family: var(--font-family);
+            font-size: 1.1rem;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            width: 80%;
+            text-align: center;
+            outline: none;
+            letter-spacing: 2px;
+        }
+
+        .password-box button {
+            background-color: var(--accent-glow);
+            color: var(--bg-color);
+            border: none;
+            padding: 10px 20px;
+            font-family: var(--font-family);
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            border-radius: 2px;
+        }
+
+        .password-box button:hover {
+            background-color: #fff;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: var(--accent-glow);
+            cursor: pointer;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+        }
+
+        .modal-content .close-btn {
+            color: #4a3c26;
+        }
+
+        .error-msg {
+            color: #ff4c4c;
+            font-size: 0.75rem;
+            margin-top: 10px;
+            display: none;
+            font-style: italic;
+        }
+
+        /* VENTANA MODAL PARA REINICIAR */
+        #resetModal, #discardModal, #inventoryFullModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1200;
+        }
+
+        .code-modal-box {
+            background-color: #191512;
+            border: 2px solid var(--border-color);
+            padding: 25px;
+            width: 350px;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+
+        .code-modal-box h3 {
+            font-size: 0.95rem;
+            color: var(--accent-glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-modal-box p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .code-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .code-modal-btn {
+            background: #241e19;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 14px;
+            font-family: var(--font-family);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+
+        .code-modal-btn:hover {
+            border-color: var(--accent-glow);
+        }
+
+        .system-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-ctrl {
+            background: #191512;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 2px;
+            font-size: 0.8rem;
+            font-family: var(--font-family);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .btn-ctrl:hover {
+            border-color: var(--accent-glow);
+            color: var(--text-main);
+            background-color: #241e19;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- VISOR A PANTALLA COMPLETA UNIVERSAL -->
+    <div id="fullscreenViewer" onclick="closeFullscreen()">
+        <div id="fullscreenContent">
+            <!-- Contenido dinámico (imagen) -->
+        </div>
+    </div>
+
+    <!-- MODAL DE CONTENIDO (ESTILO LEON359.HTML) -->
+    <div class="modal-overlay" id="content-modal" onclick="closeModal('content-modal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-btn" onclick="closeModal('content-modal')">X</span>
+            <div id="phase-content-body"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONTRASEÑA / CÓDIGO (ESTILO LEON359.HTML) -->
+    <div class="modal-overlay" id="password-modal" onclick="closeModal('password-modal')">
+        <div class="password-box" onclick="closeModal('password-modal')">
+            <span class="close-btn" onclick="closeModal('password-modal')">X</span>
+            <h2 id="modalTitle">Desbloquear Capítulo</h2>
+            <p id="modalDesc">Introduce la clave correcta:</p>
+            <input type="text" id="password-input" placeholder="Clave..." autocomplete="off" onclick="event.stopPropagation()">
+            <br>
+            <button onclick="checkPassword(); event.stopPropagation()">Desbloquear</button>
+            <p class="error-msg" id="error-msg">Código incorrecto. Inténtalo de nuevo.</p>
+        </div>
+    </div>
+
+    <!-- VENTANA MODAL PARA REINICIAR -->
+    <div id="resetModal">
+        <div class="code-modal-box">
+            <h3>Reiniciar Partida</h3>
+            <p>¿Estás seguro de que deseas perder todo el progreso y reiniciar la partida?</p>
+            <div class="code-modal-buttons">
+                <button class="code-modal-btn" onclick="confirmReset()" style="background: var(--accent-color); color: white;">Reiniciar</button>
+                <button class="code-modal-btn" onclick="closeResetModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA MODAL PARA DESCARTAR OBJETO -->
+    <div id="discardModal">
+        <div class="code-modal-box">
+            <h3>Descartar Objeto</h3>
+            <p>¿Descarta el objeto?</p>
+            <div class="code-modal-buttons">
+                <button class="code-modal-btn" onclick="confirmDiscard()" style="background: var(--accent-color); color: white;">Sí</button>
+                <button class="code-modal-btn" onclick="closeDiscardModal()">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA MODAL PARA INVENTARIO LLENO -->
+    <div id="inventoryFullModal">
+        <div class="code-modal-box" style="border-color: var(--accent-glow);">
+            <h3 style="color: var(--accent-glow);">Inventario lleno</h3>
+            <p>No puedes llevar más de 8 objetos. Tienes que descartar alguno.</p>
+            <div class="code-modal-buttons">
+                <button class="code-modal-btn" onclick="closeInventoryFullModal()" style="background: var(--accent-glow); color: var(--bg-color); font-weight: bold;">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA LATERAL IZQUIERDA -->
+    <aside>
+        <!-- FOTO PEQUEÑA Y CLICKEABLE -->
+
+
+ <!-- ***************************************************************************** -->
+ <!-- *********************************** DATOS *********************************** -->
+ <!-- ***************************************************************************** -->
+
+
+        <div class="player-photo-container" onclick="openFullscreenImage('images/leon.jpg')" title="Ver foto a pantalla completa">
+            <img src="images/leon.jpg" alt="Foto">
+        </div>
+        <div class="player-info">
+            <div class="player-name">Leon Barge</div>
+            <div class="player-profession">Marinero (53 años)</div>
+        </div>
+
+        <!-- SECCIÓN DE OBJETIVOS -->
+        <div class="objectives-section">
+    <!--             <div class="objectives-title">Capítulos</div> -->
+            
+            <button class="objective-btn" id="obj-btn-1" onclick="openObjective(1)">
+                <span>CAPÍTULO 1</span> <span class="obj-icon" id="obj-icon-1">👁️</span>
+            </button>
+            
+            <button class="objective-btn locked" id="obj-btn-2" onclick="openObjective(2)">
+                <span>CAPÍTULO 2</span> <span class="obj-icon" id="obj-icon-2">🔒</span>
+            </button>
+            
+            <button class="objective-btn locked" id="obj-btn-3" onclick="openObjective(3)">
+                <span>CAPÍTULO 3</span> <span class="obj-icon" id="obj-icon-3">🔒</span>
+            </button>
+
+<!-- NUEVO CAPÍTULO -->
+            <button class="objective-btn locked" id="obj-btn-4" onclick="openObjective(4)">
+                <span>CAPÍTULO 4</span> <span class="obj-icon" id="obj-icon-4">🔒</span>
+            </button>
+
+        </div>
+    </aside>
+
+    <!-- BARRA HORIZONTAL SUPERIOR: INVENTARIO -->
+    <header>
+        <div class="inventory-bar">
+            <span class="inventory-label">Inventario:</span>
+            
+            <div class="code-input-container">
+                <input type="text" id="objectCodeInput" class="code-input" placeholder="****" maxlength="4" oninput="validateCodeInput(this)" onkeypress="handleCodeKey(event)">
+                <button class="btn-ok" onclick="processObjectCode()">OK</button>
+                <span id="errorMsg" class="error-msg"></span>
+            </div>
+
+            <div id="dynamicInventory" style="display: flex; gap: 10px;">
+                <!-- Objetos desbloqueados -->
+            </div>
+        </div>
+
+        <div class="system-controls">
+            <button class="btn-ctrl" onclick="openResetModal()">Reiniciar</button>
+        </div>
+    </header>
+
+    <!-- ÁREA PRINCIPAL: MAPA.HTML CARGADO MEDIANTE IFRAME -->
+    <main>
+        <iframe src="mapa.html"></iframe>
+    </main>
+
+    <script>
+        // --- CONFIGURACIÓN DE OBJETIVOS DEL INVENTARIO ---
+        const itemsConfig = {
+
+
+ <!-- ********************************************************************************** -->
+ <!-- *********************************** INVENTARIO *********************************** -->
+ <!-- ********************************************************************************** -->
+
+
+            "1111": { file: "carta.jpg", title: "Carta de Warren" },
+            "6482": { file: "linterna.jpg", title: "Linterna" },
+            "6390": { file: "lupa.jpg", title: "Lupa" },
+	    "6753": { file: "petaca.jpg", title: "Petaca vacía" },
+            "6542": { file: "estuche.jpg", title: "Estuche de piel" },
+	    "6776": { file: "biblia.jpg", title: "Biblia" },
+	    "6531": { file: "fajo.jpg", title: "Fajo de 100 dólares" },
+	    "6218": { file: "amuleto.jpg", title: "Un amuleto de la suerte" },
+	    "6479": { file: "reloj.jpg", title: "Reloj de bolsillo" },
+	    "6291": { file: "calendario.jpg", title: "Calendario lunar" },
+            "8321": { file: "abyssi.jpg", title: "Hechizo Abyssi" },
+            "9456": { file: "speculum.jpg", title: "Hechizo Speculum" },
+            "3782": { file: "llave.jpg", title: "Llave" },
+
+	    "6827": { file: "mechero.jpg", title: "Mechero" }
+        };
+
+        // --- BASE DE DATOS DE OBJETIVOS ---
+        const objectivesData = {
+
+
+// --- ******************************************************************** ---
+
+
+            1: {
+                title: "Capítulo 1",
+                unlocked: true,
+                items: [
+		{ text: "¿Quién eres?", type: "subheading" }, // NUEVO TÍTULO DE SECCIÓN
+		{ type: "space" }, // <--- AQUÍ INTRODUCES LA LÍNEA VACÍA
+                    { text: `
+
+Tras cincuenta y tres años bastante &quotmal llevados&quot, el fin de lo
+que consideras tu vida está a punto de llegar. En estos años has vivido
+siempre del mar, ha sido tu escuela, tu casa, tu vida. Se puede decir que
+aprendiste antes a navegar que a andar. Desde pequeño el mar ha sido tu
+vida, tu primer recuerdo es con tu tío
+Mathew, en una pequeña barcaza transportando gente y mercancías del pueblo
+a Lonely Island. Nunca conociste a tu padre, tu madre nunca quiso hablarte de
+él y cuando intentabas que te hablara de él lo único que conseguías era
+hacerla llorar desconsoladamente y desquiciarla, hasta el punto de gritar cosas
+inconexas, “Fhtägn Cthulhu” repetía una y otra vez...
+Cuando cumpliste los 17, conseguiste comprar una nueva embarcación
+con el poco dinero que dejó tu tío al morir, ya que la antigua apenas conseguía
+mantenerse a flote. &quotLittle Fish&quot la llamaste, era una pequeña embarcación con
+la que hacías todos los días el mismo camino desde Weeds a Lonely Island.
+Mucha era la gente por aquel entonces que hacía ese camino, pero desde hace
+15 años es muy distinto. En 1907 algo extraño ocurrió en la isla, de la noche a
+la mañana quedó completamente vacía, sin rastro de nadie ni violencia...
+simplemente todos desaparecieron. Desde entonces la isla está así,
+completamente vacía. Los pescadores que faenaban en las cercanías dejaron
+de hacerlo, por los extraños sonidos y demenciales figuras que pueden verse y
+oírse, sin embargo tú, sigues haciendo tu camino.
+Ahora vives gracias a lo que te da el Profesor Warren Lecturer, él es el
+único que hace el camino a Weeds. Compró el viejo caserón de los Daring y
+cuando él no está, te paga para que lo cuides y le eches un vistazo todos los
+días. Tienes las llaves y te lo conoces a la perfección, incluso conoces la
+existencia de esa habitación que él cree que nadie conoce, pero tu poca cultura
+te impide saber como abrir la extraña puerta que da acceso a ella...
+Últimamente la soledad te está afectando, y comienzas a escuchar cosas raras
+que no existen, e imaginas cosas: escuchas extraños gruñidos y aullidos que acechan la casa... 
+
+		`, type: "info" },
+		{ type: "line" }, // <--- AQUÍ INTRODUCES LA LÍNEA HORIZONTAL
+		{ text: "Resumen", type: "subheading" }, // NUEVO TÍTULO DE SECCIÓN
+		{ type: "space" }, // <--- AQUÍ INTRODUCES LA LÍNEA VACÍA
+                    { text: `
+
+Marinero de toda la vida, te ganas el sustento cuidando el caserón del profesor Warren Lecturer en la desierta y misteriosa Lonely Island. Atormentado por la soledad y por el recuerdo de una madre que sólo desvariaba palabras arcanas al preguntarle por tu padre desconocido, empiezas a perder la cordura; sin embargo, ignoras que un oscuro destino te aguarda, cuando el océano te reclame.
+
+		`, type: "info" },
+		{ type: "line" }, // <--- AQUÍ INTRODUCES LA LÍNEA HORIZONTAL
+		{ text: "Posesiones", type: "subheading" }, // NUEVO TÍTULO DE SECCIÓN
+		{ type: "space" }, // <--- AQUÍ INTRODUCES LA LÍNEA VACÍA
+                    { text: `
+
+Una carta de tu amigo el profesor Warren Lecturer. Introduce el código <b>1111</b> en tu inventario.
+
+		`, type: "info" },
+                    { text: `
+
+Una petaca vacía. Introduce el código <b>6753</b> en tu inventario.
+
+		`, type: "info" },
+		{ type: "line" }, // <--- AQUÍ INTRODUCES LA LÍNEA HORIZONTAL
+		{ text: "En términos de juego:", type: "subheading" }, // NUEVO TÍTULO DE SECCIÓN
+		{ type: "space" }, // <--- AQUÍ INTRODUCES LA LÍNEA VACÍA
+                    { text: `
+
+Podrás hacer y deshacer a tu gusto, inventarte cosas (importante para desorientar y divertirte un rato. Puedes mezclar realidad con ficción), mostrar la habitación secreta cuando lo veas oportuno.
+
+		`, type: "info" },
+                    { text: `
+
+Al fin y al cabo eres el director de juego, por lo que, en cierta forma, tienes que hacer que las reglas de juego se cumplan.
+
+		`, type: "info" },
+                    { text: `
+
+La clave para el capítulo 2 es: <b>banana</b>.
+
+		`
+		, type: "info" }
+                ]
+            },
+
+
+// --- ******************************************************************** ---
+
+
+            2: {
+                title: "Capítulo 2",
+                unlocked: false,
+                code: "banana",
+                items: [
+		{ text: "Objetivos", type: "subheading" }, // NUEVO TÍTULO DE SECCIÓN
+		{ type: "space" }, // <--- AQUÍ INTRODUCES LA LÍNEA VACÍA
+                    { text: `
+
+Convence al grupo de que la comida y el vino que has servido son un obsequio especial y deben sentarse a relajarse en el salón.
+
+		`, type: "check" },
+                    { text: `
+
+Convence al grupo para recorrer la casa, dividiéndoos en grupos de 2 personas. Unos 10 minutos por pareja. Códigos: Cocina (<b>7359</b>), Biblioteca (<b>7469</b>), Bodega (<b>7182</b>), Estudio (<b>2419</b>).
+
+		`, type: "check" },
+                    { text: `
+
+Intenta hablar con todo el mundo.
+
+		`, type: "check" },
+                    { text: `
+
+La clave para el capítulo 3 es: <b>mesa</b>.
+
+		`, type: "check" }
+                ]
+            },
+
+
+// --- ******************************************************************** ---
+
+
+            3: {
+                title: "Capítulo 3",
+                unlocked: false,
+                code: "mesa",
+                items: [
+		{ text: "Objetivos", type: "subheading" }, // NUEVO TÍTULO DE SECCIÓN
+		{ type: "space" }, // <--- AQUÍ INTRODUCES LA LÍNEA VACÍA
+                    { text: `
+
+Finge no saber nada del mundo exterior y acusa a los invitados de haber traído la desgracia a tu tranquila isla.
+
+		`, type: "check" },
+                    { text: `
+
+Intenta averiguar qué relación tenían realmente estos forasteros con el señor Warren, interrogándolos uno a uno en privado.
+
+		`, type: "check" },
+                    { text: `
+
+La clave para el capítulo 4 es: <b>agua</b>.
+
+		`, type: "check" }
+                ]
+            },
+
+
+// --- ******************************************************************** ---
+
+
+            4: {
+                title: "Capítulo 4",
+                unlocked: false,
+                code: "agua", // Contraseña para desbloquear este capítulo
+                items: [
+                    { text: "Objetivos", type: "subheading" },
+                    { type: "space" },
+                    { text: `
+
+Entrega el calendario lunar (código <b>6291</b>) a los jugadores. Dile que lo has encontrado debajo de la mesa del salón.
+
+		`, type: "check" },
+                    { text: `
+
+Dile a los que intentan abrir la puerta del estudio secreto que tú la has visto antes, pero que está maldita y nadie debería entrar allí.
+
+		`, type: "check" }
+                ]
+            }
+        };
+
+
+// --- ******************************************************************** ---
+// --- ******************************************************************** ---
+// --- ******************************************************************** ---
+
+
+        // Almacén de estados de checkboxes para cada objetivo
+        let objectiveChecks = {};
+
+        let currentAttemptObjective = null;
+        let unlockedItems = [];
+
+        // --- PERSISTENCIA (LOCALSTORAGE) ---
+        function saveGame() {
+            const gameState = {
+                objectives: {
+                    1: objectivesData[1].unlocked,
+                    2: objectivesData[2].unlocked,
+                    3: objectivesData[3].unlocked,
+		    4: objectivesData[4].unlocked // <--- AÑADE ESTA LÍNEA PARA NUEVO CAPÍTULO
+                },
+                checks: objectiveChecks,
+                inventory: unlockedItems
+            };
+            localStorage.setItem('arkham_save_state', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('arkham_save_state');
+            if (saved) {
+                try {
+                    const gameState = JSON.parse(saved);
+                    
+                    // Restaurar estados de checkboxes
+                    if (gameState.checks) {
+                        objectiveChecks = gameState.checks;
+                    }
+
+                    // Restaurar objetivos
+                    if (gameState.objectives) {
+                        for (let id in gameState.objectives) {
+                            objectivesData[id].unlocked = gameState.objectives[id];
+                            const btn = document.getElementById(`obj-btn-${id}`);
+                            const icon = document.getElementById(`obj-icon-${id}`);
+                            if (gameState.objectives[id]) {
+                                if (btn) btn.classList.remove('locked');
+                                if (icon) icon.textContent = "👁️";
+                            } else {
+                                if (btn) btn.classList.add('locked');
+                                if (icon) icon.textContent = "🔒";
+                            }
+                        }
+                    }
+
+                    // Restaurar inventario
+                    if (gameState.inventory && Array.isArray(gameState.inventory)) {
+                        const inventoryContainer = document.getElementById('dynamicInventory');
+                        inventoryContainer.innerHTML = '';
+                        unlockedItems = [];
+                        gameState.inventory.forEach(itemId => {
+                            if (itemsConfig[itemId]) {
+                                const item = itemsConfig[itemId];
+                                unlockedItems.push(itemId);
+                                const slot = document.createElement('div');
+                                slot.className = 'inventory-slot';
+                                slot.id = `item-${itemId}`;
+                                slot.title = item.title;
+                                slot.setAttribute('onclick', `openFullscreenImage('images/${item.file}')`);
+                                slot.innerHTML = `<div class="discard-icon" onclick="prepareDiscard('${itemId}', event)">X</div><img src="images/${item.file}" alt="${item.title}">`;
+                                inventoryContainer.appendChild(slot);
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error("Error al cargar la partida guardada", e);
+                }
+            }
+        }
+
+        // Cargar datos al iniciar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            loadGame();
+        });
+
+        // --- GESTIÓN DE OBJETIVOS Y POP-UPS ---
+        function openObjective(id) {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            const obj = objectivesData[id];
+            if (obj.unlocked) {
+                showContent(id);
+            } else {
+                currentAttemptObjective = id;
+                document.getElementById('modalTitle').textContent = `Desbloquear Capítulo ${id}`;
+                document.getElementById('password-input').value = '';
+                document.getElementById('error-msg').style.display = 'none';
+                document.getElementById('password-modal').classList.add('active');
+                document.getElementById('password-input').focus();
+            }
+        }
+
+        function checkPassword() {
+            const input = document.getElementById('password-input').value.trim().toLowerCase();
+            const errorMsg = document.getElementById('error-msg');
+            const obj = objectivesData[currentAttemptObjective];
+
+            if (input === obj.code) {
+                const clingAudio = new Audio('audio/correct.mp3');
+                clingAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+                obj.unlocked = true;
+                const btn = document.getElementById(`obj-btn-${currentAttemptObjective}`);
+                const icon = document.getElementById(`obj-icon-${currentAttemptObjective}`);
+                btn.classList.remove('locked');
+                icon.textContent = "👁️";
+                
+                saveGame();
+                const targetId = currentAttemptObjective;
+                closeModal('password-modal');
+                showContent(targetId);
+            } else {
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Audio play prevented:", e));
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        document.getElementById('password-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        function showContent(id) {
+            const obj = objectivesData[id];
+            const body = document.getElementById('phase-content-body');
+            
+let listItemsHTML = '';
+obj.items.forEach((item, index) => {
+    if (item.type === "subheading") {
+        // Cierra la lista anterior (si la hay), añade el título de sección y vuelve a abrir lista
+        listItemsHTML += `</ul><h3>${item.text}</h3><ul>`;
+} else if (item.type === "space") { // <--- AÑADE ESTAS DOS LÍneas
+        listItemsHTML += `</ul><div style="height: 15px;"></div><ul>`; // <--- Ajusta los "15px" si quieres más o menos espacio
+} else if (item.type === "line") { // <--- AÑADE ESTAS LÍNEAS
+        listItemsHTML += `</ul><hr style="border: none; border-top: 1px solid #4a3c26; margin: 20px 0;"><ul>`; // <--- Estilo de línea adaptado al modal
+    } else if (item.type === "info") {
+        listItemsHTML += `
+            <li class="info-item">
+                <span class="obj-text">${item.text}</span>
+            </li>
+        `;
+    } else {
+        const checkKey = `${id}_${index}`;
+        const isChecked = objectiveChecks[checkKey] ? 'checked' : '';
+        const completedClass = objectiveChecks[checkKey] ? 'completed' : '';
+
+        listItemsHTML += `
+            <li class="${completedClass}">
+                <input type="checkbox" ${isChecked} onchange="toggleObjectiveCheck(${id}, ${index}, this)">
+                <span class="obj-text">${item.text}</span>
+            </li>
+        `;
+    }
+});
+
+            body.innerHTML = `
+                <h2>${obj.title}</h2>
+                <ul>
+                    ${listItemsHTML}
+                </ul>
+            `;
+
+            const modalContent = document.querySelector('#content-modal .modal-content');
+            if (modalContent) {
+                modalContent.scrollTop = 0;
+            }
+
+            document.getElementById('content-modal').classList.add('active');
+        }
+
+        function toggleObjectiveCheck(chapterId, itemIndex, checkbox) {
+            const checkKey = `${chapterId}_${itemIndex}`;
+            objectiveChecks[checkKey] = checkbox.checked;
+            
+            const liElement = checkbox.closest('li');
+            if (checkbox.checked) {
+                liElement.classList.add('completed');
+            } else {
+                liElement.classList.remove('completed');
+            }
+            
+            saveGame();
+            event.stopPropagation();
+        }
+
+        function closeModal(modalId) {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            document.getElementById(modalId).classList.remove('active');
+            if (modalId === 'password-modal') {
+                currentAttemptObjective = null;
+            }
+        }
+
+        // --- GESTIÓN DEL MODAL DE REINICIO ---
+        function openResetModal() {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            document.getElementById('resetModal').style.display = 'flex';
+        }
+
+        function closeResetModal() {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            document.getElementById('resetModal').style.display = 'none';
+        }
+
+        function confirmReset() {
+            const restartAudio = new Audio('audio/restart.mp3');
+            restartAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            restartAudio.onended = () => {
+                localStorage.clear();
+                location.reload();
+            };
+
+            setTimeout(() => {
+                localStorage.clear();
+                location.reload();
+            }, 1500);
+        }
+
+        // --- GESTIÓN DE DESCARTAR OBJETOS ---
+        let itemToDiscard = null;
+
+        function prepareDiscard(itemId, event) {
+            event.stopPropagation(); // Evita que se abra la imagen a pantalla completa al pulsar la X
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            itemToDiscard = itemId;
+            document.getElementById('discardModal').style.display = 'flex';
+        }
+
+        function closeDiscardModal() {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            document.getElementById('discardModal').style.display = 'none';
+            itemToDiscard = null;
+        }
+
+        function confirmDiscard() {
+            if (itemToDiscard) {
+                const discardAudio = new Audio('audio/pickup.mp3');
+                discardAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+                // Eliminar miniatura del DOM
+                const slot = document.getElementById(`item-${itemToDiscard}`);
+                if (slot) {
+                    slot.remove();
+                }
+                
+                // Actualizar array de inventario
+                unlockedItems = unlockedItems.filter(id => id !== itemToDiscard);
+                
+                // Guardar la partida para hacer el descarte permanente
+                saveGame();
+                
+                // Cerrar pop up
+                closeDiscardModal();
+            }
+        }
+
+        function closeInventoryFullModal() {
+            document.getElementById('inventoryFullModal').style.display = 'none';
+        }
+
+        // --- GESTIÓN DE INVENTARIO Y CÓDIGOS DE OBJETIVOS ---
+        function validateCodeInput(input) {
+            input.value = input.value.replace(/[^0-9]/g, '');
+        }
+
+        function handleCodeKey(event) {
+            if (event.key === 'Enter') {
+                processObjectCode();
+            }
+        }
+
+        function processObjectCode() {
+            const inputField = document.getElementById('objectCodeInput');
+            const code = inputField.value;
+            const errorSpan = document.getElementById('errorMsg');
+            const inventoryContainer = document.getElementById('dynamicInventory');
+            
+            errorSpan.innerText = "";
+            errorSpan.style.animation = "";
+
+            if (itemsConfig[code]) {
+                if (!document.getElementById(`item-${code}`)) {
+                    if (unlockedItems.length >= 8) {
+                        const nopeAudio = new Audio('audio/nope.mp3');
+                        nopeAudio.play().catch(e => console.log("Audio play prevented:", e));
+                        document.getElementById('inventoryFullModal').style.display = 'flex';
+                        inputField.value = "";
+                        return;
+                    }
+
+                    const pickupAudio = new Audio('audio/pickup.mp3');
+                    pickupAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+                    unlockedItems.push(code);
+                    const item = itemsConfig[code];
+                    const slot = document.createElement('div');
+                    slot.className = 'inventory-slot';
+                    slot.id = `item-${code}`;
+                    slot.title = item.title;
+                    slot.setAttribute('onclick', `openFullscreenImage('images/${item.file}')`);
+                    slot.innerHTML = `<div class="discard-icon" onclick="prepareDiscard('${code}', event)">X</div><img src="images/${item.file}" alt="${item.title}">`;
+                    inventoryContainer.appendChild(slot);
+                    
+                    saveGame();
+                }
+                inputField.value = "";
+            } else if (code.length > 0) {
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+                errorSpan.innerText = "Objeto no disponible";
+                errorSpan.style.color = "#ff4c4c";
+                errorSpan.style.animation = "textBlink 0.4s infinite";
+                
+                setTimeout(() => { 
+                    errorSpan.innerText = ""; 
+                    errorSpan.style.animation = "";
+                }, 2000);
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            const container = document.querySelector('.code-input-container');
+            const inputField = document.getElementById('objectCodeInput');
+            if (inputField && inputField.value.length > 0 && container && !container.contains(event.target)) {
+                inputField.value = '';
+            }
+        });
+
+        // --- VISOR A PANTALLA COMPLETA ---
+        function openFullscreenImage(imgSrc) {
+            const viewer = document.getElementById('fullscreenViewer');
+            const content = document.getElementById('fullscreenContent');
+            content.innerHTML = `<img src="${imgSrc}" alt="Imagen a pantalla completa">`;
+            viewer.style.display = 'flex';
+        }
+
+        function closeFullscreen() {
+            document.getElementById('fullscreenViewer').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

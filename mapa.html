@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de la Mansión - Expediente Arkham</title>
+    <style>
+        :root {
+            --bg-color: #12100e;
+            --accent-glow: #d4a373;
+            --accent-color: #8c3b2b;
+            --text-main: #e6dfd5;
+            --text-muted: #9e9587;
+            --border-color: #3b3228;
+            --font-family: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-image: radial-gradient(circle, #1c1713 0%, #0d0a08 100%);
+        }
+
+        .map-container {
+            position: relative;
+            max-width: 95vw;
+            max-height: 95vh;
+            box-shadow: 0 0 35px rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--border-color);
+            border-radius: 3px;
+            background-color: #000;
+        }
+
+        .map-container img {
+            display: block;
+            max-width: 100%;
+            max-height: 88vh;
+            object-fit: contain;
+            filter: sepia(0.3) contrast(1.15) brightness(0.85);
+        }
+
+        /* Hotspots interactivos sobre cada habitación */
+        .hotspot {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-color: rgba(140, 59, 43, 0.75);
+            border: 2px solid var(--accent-glow);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px rgba(212, 163, 115, 0.6);
+            transition: all 0.2s;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        .hotspot::after {
+            content: "•";
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* Estilo para el icono de candado debajo del hotspot */
+        .hotspot-lock {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.4rem;
+            margin-top: 3px;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+        }
+
+        .hotspot:hover {
+            transform: translate(-50%, -50%) scale(1.18);
+            background-color: var(--accent-color);
+            box-shadow: 0 0 18px var(--accent-glow);
+        }
+
+        /* Tooltip con nombre de la habitación */
+        .hotspot .tooltip {
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #191512;
+            color: var(--text-main);
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            border: 1px solid var(--accent-glow);
+            border-radius: 2px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        }
+
+        .hotspot:hover .tooltip {
+            opacity: 1;
+        }
+
+        /* Ventana Modal de Clave */
+        #codeModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1100;
+        }
+
+        .code-modal-box {
+            background-color: #191512;
+            border: 2px solid var(--border-color);
+            padding: 25px;
+            width: 350px;
+            border-radius: 3px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+
+        .code-modal-box h3 {
+            font-size: 0.95rem;
+            color: var(--accent-glow);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-modal-box p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .code-modal-input {
+            background: #0f0d0b;
+            border: 1px solid var(--border-color);
+            color: var(--accent-glow);
+            font-family: var(--font-family);
+            font-size: 1.1rem;
+            padding: 8px;
+            text-align: center;
+            letter-spacing: 2px;
+            outline: none;
+        }
+
+        .code-modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .code-modal-btn {
+            background: #241e19;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 14px;
+            font-family: var(--font-family);
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 2px;
+        }
+
+        .code-modal-btn:hover {
+            border-color: var(--accent-glow);
+        }
+
+        .error-msg {
+            font-size: 0.75rem;
+            color: var(--accent-color);
+            height: 15px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- VENTANA MODAL PARA ACCESO A ZONAS -->
+    <div id="codeModal">
+        <div class="code-modal-box">
+            <h3 id="modalTitle">Acceso</h3>
+            <p id="modalDesc">Introduce la clave para acceder:</p>
+            <input type="text" id="modalCodeInput" class="code-modal-input" placeholder="****" maxlength="4" autocomplete="off" onkeypress="handleModalKey(event)">
+            <span id="modalError" class="error-msg"></span>
+            <div class="code-modal-buttons">
+                <button class="code-modal-btn" onclick="submitModalCode()" style="background: var(--accent-color); color: white;">Entrar</button>
+                <button class="code-modal-btn" onclick="closeCodeModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="map-container">
+        <img src="images/mapa.jpg" alt="Plano de la Mansión Arkham">
+        
+
+
+        <!-- Salón Principal -->
+<!--        <div class="hotspot" style="top: 29%; left: 26%;" onclick="navigateTo('salon.html')">
+            <span class="tooltip">Salón Principal</span>
+        </div> -->
+
+        <!-- Almacén -->
+<!--        <div class="hotspot" style="top: 28%; left: 45%;" onclick="checkAlmacenAccess()">
+            <span class="tooltip">Almacén</span>
+        </div> -->
+
+        <!-- Estudio Oculto -->
+<!--        <div class="hotspot" id="hotspot-estudio" style="top: 11%; left: 72%;" onclick="checkEstudioAccess()">
+            <span class="tooltip">???</span>
+        </div> -->
+
+        <!-- Cocina -->
+        <div class="hotspot" id="hotspot-cocina" style="top: 56%; left: 11%;" onclick="checkCocinaAccess()">
+            <span class="tooltip">Cocina</span>
+        </div>
+
+
+        <!-- Biblioteca -->
+        <div class="hotspot" id="hotspot-biblioteca" style="top: 55%; left: 56%;" onclick="checkBibliotecaAccess()">
+            <span class="tooltip">Biblioteca</span>
+        </div>
+
+        <!-- Bodega -->
+        <div class="hotspot" id="hotspot-bodega" style="top: 52%; left: 87%;" onclick="checkBodegaAccess()">
+            <span class="tooltip">Bodega</span>
+        </div>
+    </div>
+
+    <script>
+        let currentModalConfig = null;
+
+        function updateLocks() {
+            const areas = [
+                { key: 'cocinaUnlocked', id: 'hotspot-cocina' },
+                { key: 'bibliotecaUnlocked', id: 'hotspot-biblioteca' },
+                { key: 'bodegaUnlocked', id: 'hotspot-bodega' },
+                { key: 'estudioUnlocked', id: 'hotspot-estudio' },
+                { key: 'almacenUnlocked', id: 'hotspot-almacen' }
+            ];
+
+            areas.forEach(area => {
+                const el = document.getElementById(area.id);
+                if (el) {
+                    const isUnlocked = localStorage.getItem(area.key) === 'true';
+                    let lockSpan = el.querySelector('.hotspot-lock');
+                    
+                    if (!isUnlocked) {
+                        if (!lockSpan) {
+                            lockSpan = document.createElement('span');
+                            lockSpan.className = 'hotspot-lock';
+                            lockSpan.innerText = '🔒';
+                            el.appendChild(lockSpan);
+                        }
+                    } else {
+                        if (lockSpan) {
+                            lockSpan.remove();
+                        }
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateLocks();
+        });
+
+        function navigateTo(page) {
+            goToRoom(page);
+        }
+
+        function goToRoom(page) {
+            const doorAudio = new Audio('audio/opendoor.mp3');
+            doorAudio.play().catch(e => console.log("Audio play prevented:", e));
+            doorAudio.onended = () => {
+                window.location.href = page;
+            };
+            setTimeout(() => {
+                window.location.href = page;
+            }, 1500);
+        }
+
+
+        function checkCocinaAccess() {
+            const isUnlocked = localStorage.getItem('cocinaUnlocked');
+            if (isUnlocked === 'true') {
+                goToRoom('cocina.html');
+            } else {
+                openCodeModal({
+                    title: "Cocina",
+                    desc: "Introduce la clave para acceder a la cocina:",
+                    code: "7359",
+                    storageKey: "cocinaUnlocked",
+                    target: "cocina.html"
+                });
+            }
+        }
+
+        function checkBibliotecaAccess() {
+            const isUnlocked = localStorage.getItem('bibliotecaUnlocked');
+            if (isUnlocked === 'true') {
+                goToRoom('biblioteca.html');
+            } else {
+                openCodeModal({
+                    title: "Biblioteca",
+                    desc: "Introduce la clave para acceder a la biblioteca:",
+                    code: "7469",
+                    storageKey: "bibliotecaUnlocked",
+                    target: "biblioteca.html"
+                });
+            }
+        }
+
+        function checkBodegaAccess() {
+            const isUnlocked = localStorage.getItem('bodegaUnlocked');
+            if (isUnlocked === 'true') {
+                goToRoom('bodega.html');
+            } else {
+                openCodeModal({
+                    title: "Bodega",
+                    desc: "Introduce la clave para acceder a la bodega:",
+                    code: "7182",
+                    storageKey: "bodegaUnlocked",
+                    target: "bodega.html"
+                });
+            }
+        }
+
+        function checkEstudioAccess() {
+            const isUnlocked = localStorage.getItem('estudioUnlocked');
+            if (isUnlocked === 'true') {
+                goToRoom('estudio.html');
+            } else {
+                openCodeModal({
+                    title: "Habitación oculta",
+                    desc: "Introduce la clave para acceder a la habitación oculta:",
+                    code: "2419",
+                    storageKey: "estudioUnlocked",
+                    target: "estudio.html"
+                });
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+        function checkAlmacenAccess() {
+            const isUnlocked = localStorage.getItem('almacenUnlocked');
+            if (isUnlocked === 'true') {
+                goToRoom('almacen.html');
+            } else {
+                openCodeModal({
+                    title: "Almacén - Acceso",
+                    desc: "Introduce la clave para acceder al almacén:",
+                    code: "9696",
+                    storageKey: "almacenUnlocked",
+                    target: "almacen.html"
+                });
+            }
+        }
+
+        function openCodeModal(config) {
+            currentModalConfig = config;
+            document.getElementById('modalTitle').innerText = config.title;
+            document.getElementById('modalDesc').innerText = config.desc;
+            document.getElementById('modalError').innerText = "";
+            document.getElementById('modalCodeInput').value = "";
+            document.getElementById('codeModal').style.display = 'flex';
+            document.getElementById('modalCodeInput').focus();
+        }
+
+        function closeCodeModal() {
+            document.getElementById('codeModal').style.display = 'none';
+        }
+
+        function submitModalCode() {
+            const inputVal = document.getElementById('modalCodeInput').value.trim();
+            const errorSpan = document.getElementById('modalError');
+
+            if (currentModalConfig && inputVal === currentModalConfig.code) {
+                localStorage.setItem(currentModalConfig.storageKey, 'true');
+                updateLocks();
+                goToRoom(currentModalConfig.target);
+            } else {
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Audio play prevented:", e));
+                errorSpan.innerText = "Código incorrecto.";
+            }
+        }
+
+        function handleModalKey(event) {
+            if (event.key === 'Enter') {
+                submitModalCode();
+            }
+        }
+    </script>
+</body>
+</html>

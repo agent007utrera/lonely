@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bodega</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Añade esta línea */
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .game-image {
+            width: 100%;
+            display: block;
+        }
+
+        /* Zonas clickeables (Hotspots) - Cambiar background a 'transparent' cuando termines de ajustar */
+        .hotspot {
+            position: absolute;
+            background-color: rgba(255, 215, 0, 0.1); 
+            border: 2px dashed rgba(255, 215, 0, 0.4);
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .hotspot:hover {
+            background-color: rgba(255, 215, 0, 0.35);
+            border-color: rgba(255, 215, 0, 0.9);
+        }
+
+        /* Coordenadas personalizadas según la imagen de la bodega */
+        #hiddenAccess { top: 38%; left: 31%; width: 14%; height: 50%; } /* Barricas y zona de roca rascada / acceso secreto */
+        #brokenWine   { top: 68%; left: 63%; width: 33%; height: 30%; } /* Estantes de la derecha con botellas y suelo */
+        #stairs       { top: 20%; left: 0%;  width: 25%; height: 80%; } /* Escalera de piedra de la izquierda */
+        #deepTunnel   { top: 35%; left: 45%; width: 10%; height: 25%; } /* Pasadizo oscuro del fondo */
+        #webCeiling   { top: 0%;  left: 55%; width: 45%; height: 35%; } /* Telarañas masivas del techo */
+
+        /* Estilos del Pop-up (Modal) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 25px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            position: relative;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #d4af37;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        .modal-content p {
+            line-height: 1.6;
+            color: #ccc;
+            font-size: 0.95rem;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: #888;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        /* Estilos para el visor a pantalla completa */
+        .fullscreen-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .fullscreen-overlay img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+
+        /* Estilos para el formulario del cerrojo */
+        .lock-container {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .lock-input {
+            width: 100%;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+            text-align: center;
+            letter-spacing: 2px;
+            -moz-appearance: textfield;
+        }
+
+        .lock-input::-webkit-outer-spin-button,
+        .lock-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .lock-btn {
+            background-color: #d4af37;
+            color: #121212;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .lock-btn:hover {
+            background-color: #b89528;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .modal-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 4px;
+            margin-top: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background-color: #1e1e1e;
+            color: #d4af37;
+            border: 1px solid #d4af37;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 4px;
+            z-index: 1500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: #d4af37;
+            color: #121212;
+        }
+    </style>
+</head>
+<body>
+<a href="#" class="back-btn" onclick="volverAlMapa(event)">VOLVER AL SALÓN</a>
+    <div class="game-container">
+        <!-- Imagen de fondo -->
+        <img src="images/bodega.jpg" alt="Bodega Subterránea" class="game-image">
+
+        <!-- Zonas interactivas -->
+        <div class="hotspot" id="hiddenAccess" onclick="openBarricasModal()"></div>
+        
+        <div class="hotspot" id="brokenWine" onclick="openWineModal()"></div>
+        
+        <div class="hotspot" id="stairs" onclick="openModal('Escalinata de piedra', 'Unos escalones de piedra húmeda y desgastada que ascienden de vuelta hacia la planta principal de la casa. El aire aquí abajo es ligeramente menos irrespirable.')"></div>
+        
+        <!-- Zona del pasadizo -->
+        <div class="hotspot" id="deepTunnel" onclick="openDoorModal()"></div>
+        
+        <!-- Bóveda Entelarañada -->
+        <div class="hotspot" id="webCeiling" onclick="openWebModal()"></div>
+    </div>
+
+    <!-- Estructura del Modal -->
+    <div id="gameModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h3 id="modalTitle">Título</h3>
+            <div id="modalBody">
+                <p id="modalText">Texto de la pista...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visor de imagen a pantalla completa -->
+    <div id="fullscreenOverlay" class="fullscreen-overlay" onclick="closeFullscreen()">
+        <img src="images/diario.jpg" alt="Imagen a Pantalla Completa">
+    </div>
+
+    <script>
+        let isDoorUnlocked = localStorage.getItem('bodega_door_unlocked') === 'true';
+
+        function openModal(title, text) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = `<p id="modalText">${text}</p>`;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        // Función específica para Barricas
+        function openBarricasModal() {
+            const barrilesAudio = new Audio('audio/barriles.mp3');
+            barrilesAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+            document.getElementById('modalTitle').innerText = 'Barricas';
+            document.getElementById('modalBody').innerHTML = `
+                <p id="modalText">Varias barricas de roble apiladas junto a un rincón de la bodega. Das un golpe en una de ellas y parece que está vacía. Parece que hay algo escrito en una de las barricas...</p>
+                <div class="lock-container">
+                    <input type="number" id="barricasCodeInput" class="lock-input" placeholder="****" min="0" max="9999" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);" onkeypress="handleBarricasKeyPress(event)" autocomplete="off">
+                    <button class="lock-btn" onclick="verificarCodigoBarricas()">Usar objeto</button>
+                    <span id="barricasErrorMessage" class="error-message" style="color: #ff6b6b;">Objeto no válido.</span>
+                </div>
+                <div id="barricasResult"></div>
+            `;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+
+
+
+function verificarCodigoBarricas() {
+            const input = document.getElementById('barricasCodeInput');
+            const errorMsg = document.getElementById('barricasErrorMessage');
+            const resultContainer = document.getElementById('barricasResult');
+            const valor = input.value.trim();
+
+            if (valor === '6390') {
+                errorMsg.style.display = 'none';
+
+                // Reproduce el audio de acierto (cling)
+                const clingAudio = new Audio('audio/cling.mp3');
+                clingAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+                // Muestra la imagen del barril
+                resultContainer.innerHTML = `<img src="images/barril.jpg" alt="Barril" class="modal-img" onclick="showFullscreen(event, 'images/barril.jpg')">`;
+            } else {
+                errorMsg.style.display = 'block';
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            }
+        }
+
+
+
+
+        function handleBarricasKeyPress(event) {
+            if (event.key === 'Enter') {
+                verificarCodigoBarricas();
+            }
+        }
+
+        // Función específica para el estante de botellas de vino con imagen, sonido y salto a pantalla completa
+        function openWineModal() {
+            const title = 'Estantes de botellas de vino';
+            const text = 'Una botella de vino muy antigua y valiosa con el sello roto y líquido derramado en el suelo. La etiqueta indica que es del año 1899. Entre las botellas, ves la hoja de un diario.';
+            
+            const openBookAudio = new Audio('audio/openbook.mp3');
+            openBookAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = `
+                <p id="modalText">${text}</p>
+                <img src="images/diario.jpg" alt="Diario" class="modal-img" onclick="showFullscreen(event, 'images/diario.jpg')">
+            `;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        function showFullscreen(event, imgSrc = 'images/diario.jpg') {
+            event.stopPropagation();
+            closeModal();
+            const fullscreenImg = document.querySelector('#fullscreenOverlay img');
+            if (fullscreenImg) {
+                fullscreenImg.src = imgSrc;
+            }
+            document.getElementById('fullscreenOverlay').style.display = 'flex';
+        }
+
+        function closeFullscreen() {
+            document.getElementById('fullscreenOverlay').style.display = 'none';
+        }
+
+        // Función específica para el Pasadizo al Fondo con contraseña
+        function openDoorModal() {
+            document.getElementById('modalTitle').innerText = 'Pasadizo al fondo';
+            if (isDoorUnlocked) {
+                document.getElementById('modalBody').innerHTML = `
+                    <p>Ha abierto la puerta que conduce al estudio secreto.</p>
+                    <div class="lock-container">
+                        <button class="lock-btn" onclick="irAlEstudio()">Continuar</button>
+                    </div>
+                `;
+            } else {
+                document.getElementById('modalBody').innerHTML = `
+                    <p>Para abrir esta puerta, se necesita una clave.</p>
+                    <div class="lock-container">
+                        <input type="number" id="passInput" class="lock-input" placeholder="****" min="0" max="9999" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);" onkeypress="handleKeyPress(event)" autocomplete="off">
+                        <button class="lock-btn" onclick="verificarCodigo()">Desbloquear</button>
+                        <span id="errorMessage" class="error-message">Código incorrecto</span>
+                    </div>
+                    <img src="images/cerradura.jpg" alt="Cerradura" class="modal-img" id="cerradura">
+                `;
+            }
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        // Función específica para la Bóveda Entelarañada
+        function openWebModal() {
+            document.getElementById('modalTitle').innerText = 'Bóveda con telarañas';
+            document.getElementById('modalBody').innerHTML = `
+                <p>Hay un agujero, pero está muy oscuro. Para utilizar un objeto, introduzca su código.</p>
+                <div class="lock-container">
+                    <input type="number" id="objectCodeInput" class="lock-input" placeholder="****" min="0" max="9999" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);" onkeypress="handleWebKeyPress(event)" autocomplete="off">
+                    <button class="lock-btn" onclick="verificarCodigoObjeto()">Usar objeto</button>
+                    <span id="webErrorMessage" class="error-message" style="color: #ff6b6b;">Objeto no válido.</span>
+                </div>
+                <img src="images/holedark.jpg" alt="Agujero a oscuras" class="modal-img" id="holeImage">
+            `;
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        function verificarCodigoObjeto() {
+            const input = document.getElementById('objectCodeInput');
+            const errorMsg = document.getElementById('webErrorMessage');
+            const holeImg = document.getElementById('holeImage');
+            const valor = input.value.trim();
+
+            if (valor === '6482') {
+                errorMsg.style.display = 'none';
+
+                // Reproduce el audio de la linterna
+                const flashlightAudio = new Audio('audio/flashlight.mp3');
+                flashlightAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+                // Cambia la imagen por la iluminada
+                if (holeImg) {
+                    holeImg.src = 'images/holelight.jpg';
+                }
+            } else {
+                errorMsg.style.display = 'block';
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            }
+        }
+
+        function handleWebKeyPress(event) {
+            if (event.key === 'Enter') {
+                verificarCodigoObjeto();
+            }
+        }
+
+        function verificarCodigo() {
+            const input = document.getElementById('passInput');
+            const errorMsg = document.getElementById('errorMessage');
+            const valor = input.value.trim();
+
+            if (valor === '2419') {
+                errorMsg.style.display = 'none';
+                isDoorUnlocked = true;
+                localStorage.setItem('bodega_door_unlocked', 'true');
+
+                // Reproduce el audio del sonido de apertura de puerta
+                const openDoorAudio = new Audio('audio/opendoor.mp3');
+                openDoorAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+
+                document.getElementById('modalBody').innerHTML = `
+                    <p>Ha abierto la puerta que conduce al estudio secreto.</p>
+                    <div class="lock-container">
+                        <button class="lock-btn" onclick="irAlEstudio()">Continuar</button>
+                    </div>
+                `;
+            } else {
+                errorMsg.style.display = 'block';
+                const nopeAudio = new Audio('audio/nope.mp3');
+                nopeAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            }
+        }
+
+        function irAlEstudio() {
+            const pasosAudio = new Audio('audio/pasos.mp3');
+            pasosAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+            setTimeout(() => {
+                window.location.href = 'estudio.html';
+            }, 1800);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                verificarCodigo();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('gameModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            let modal = document.getElementById('gameModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+function volverAlMapa(event) {
+    event.preventDefault();
+    const doorAudio = new Audio('audio/opendoor.mp3');
+    doorAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+    doorAudio.onended = () => {
+        window.location.href = 'mapa.html';
+    };
+    setTimeout(() => {
+        window.location.href = 'mapa.html';
+    }, 1500);
+}
+
+    </script>
+
+</body>
+</html>

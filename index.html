@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selección de personaje</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --text-color: #d3d3d3;
+            --accent-color: #c5a059;
+            --dark-accent: #1a1e1c;
+            --paper-bg: #e2d8c3;
+            --paper-text: #2c2519;
+            --font-title: 'Cinzel', serif;
+            --font-text: 'Playfair Display', serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #171d1a 0%, #050606 100%);
+            color: var(--text-color);
+            font-family: var(--font-text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* ESTILOS PARA LA INTRODUCCIÓN ESTILO JUEGO */
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            overflow: hidden;
+            transition: opacity 1s ease;
+        }
+
+        #studio-text {
+            font-family: var(--font-title);
+            color: var(--accent-color);
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+            text-shadow: 0 0 15px rgba(197, 160, 89, 0.6);
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+            position: absolute;
+        }
+
+        #zoom-container {
+            position: absolute;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        #zoom-image {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            transform: scale(0.1);
+            opacity: 0;
+            transition: transform 3.5s cubic-bezier(0.25, 1, 0.5, 1), opacity 1.5s ease-in;
+        }
+
+        #zoom-container.active #zoom-image {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .continue-btn {
+            position: absolute;
+            bottom: 15%;
+            font-family: var(--font-title);
+            background: rgba(11, 12, 16, 0.85);
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: none;
+            z-index: 10000;
+            transition: all 0.3s ease;
+        }
+
+        .continue-btn:hover {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 25px var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        h1, h2 {
+            font-family: var(--font-title);
+            color: var(--accent-color);
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 40px;
+        }
+
+        .char-card {
+            background: var(--dark-accent);
+            border: 1px solid var(--accent-color);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .char-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px var(--accent-color);
+            background: #242b28;
+        }
+
+        .char-photo {
+            width: 80px;
+            height: 100px;
+            border: 2px solid var(--accent-color);
+            object-fit: cover;
+            filter: sepia(0.8) contrast(1.2);
+            margin-right: 15px;
+            background: #000;
+        }
+
+        .char-info h3 {
+            margin: 0;
+            font-family: var(--font-title);
+            color: var(--accent-color);
+        }
+
+        .char-info p {
+            margin: 5px 0 0;
+            font-size: 0.9rem;
+            color: #8c928d;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .password-box {
+            background: var(--dark-accent);
+            border: 2px solid var(--accent-color);
+            padding: 30px;
+            text-align: center;
+            width: 300px;
+            position: relative;
+        }
+
+        .password-box input {
+            background: #000; border: 1px solid var(--accent-color);
+            color: var(--accent-color); padding: 10px;
+            margin: 15px 0; width: 80%; text-align: center;
+        }
+
+        .close-btn {
+            position: absolute; 
+            top: 10px; 
+            right: 15px;
+            cursor: pointer; 
+            font-size: 1.5rem; 
+            font-weight: bold;
+            color: var(--accent-color);
+            transition: 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #fff;
+        }
+
+        .error-msg { color: #ff4c4c; font-size: 0.8rem; display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- CAPA DE INTRODUCCIÓN ESTILO VIDEOJUEGO -->
+    <div id="intro-overlay">
+        <div id="studio-text">UTRERA PRODUCTIONS</div>
+        <div id="zoom-container">
+            <img id="zoom-image" src="images/todosmuelle.jpg" alt="Todos en el muelle">
+        </div>
+        <button class="continue-btn" id="continueBtn" onclick="startMainMenu()">CONTINUAR</button>
+    </div>
+
+    <div class="container" id="selection-view">
+        <h1>Selección de personaje</h1>
+        <p style="text-align: center; font-style: italic; color: #8c928d;">Seleccione su identidad para acceder a los registros...</p>
+        
+        <div class="character-grid" id="character-grid">
+            </div>
+    </div>
+
+    <div class="modal-overlay" id="login-modal">
+        <div class="password-box">
+            <span class="close-btn" onclick="closeModal('login-modal')">X</span>
+            <h3 style="color: var(--accent-color);">Acceso restringido</h3>
+            <p id="login-instruction">Introduce tu clave</p>
+            <input type="text" id="login-input" placeholder="Clave..." autocomplete="off">
+            <br>
+            <button onclick="checkPlayerLogin()" style="background: var(--accent-color); border:none; padding: 10px 20px; cursor: pointer; font-weight: bold;">Entrar</button>
+            <p class="error-msg" id="login-error">Clave incorrecta</p>
+        </div>
+    </div>
+
+    <script>
+        // Secuencia de animación inicial estilo juego
+        window.addEventListener('DOMContentLoaded', () => {
+            const studioText = document.getElementById('studio-text');
+            const zoomContainer = document.getElementById('zoom-container');
+            const continueBtn = document.getElementById('continueBtn');
+
+            // 1. Aparece el texto de UTRERA PRODUCTIONS
+            setTimeout(() => {
+                studioText.style.opacity = '1';
+            }, 500);
+
+            // 2. Se desvanece el texto y entra el zoom out de la foto
+            setTimeout(() => {
+                studioText.style.opacity = '0';
+                setTimeout(() => {
+                    studioText.style.display = 'none';
+                    zoomContainer.style.display = 'flex';
+                    setTimeout(() => {
+                        zoomContainer.classList.add('active');
+                    }, 50);
+                }, 1000);
+            }, 3000);
+
+            // 3. Aparece el botón CONTINUAR tras completarse el zoom
+            setTimeout(() => {
+                continueBtn.style.display = 'block';
+            }, 6800);
+        });
+
+        // Función al pulsar CONTINUAR: reproduce click, arranca la música en loop y limpia la intro
+        function startMainMenu() {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+
+            const bgMusic = new Audio('audio/inicio.mp3');
+            bgMusic.loop = true;
+            bgMusic.play().catch(e => console.log("Audio play prevented:", e));
+
+            const introOverlay = document.getElementById('intro-overlay');
+            introOverlay.style.opacity = '0';
+            setTimeout(() => {
+                introOverlay.style.display = 'none';
+            }, 1000);
+        }
+
+        // 1. CONFIGURACIÓN DE JUGADORES CON URLS DE DESTINO
+        const players = [
+            { id: 1, name: "Leon Barge", login: "silla", photo: "images/leon.jpg", job: "Marinero", url: "leon359.html" },
+            { id: 2, name: "Menes Elder", login: "p2", photo: "images/menes.jpg", job: "Catedrático retirado", url: "menes381.html" },
+            { id: 3, name: "Gregory Lame", login: "p3", photo: "images/gregory.jpg", job: "Veterano de guerra", url: "gregory582.html" },
+            { id: 4, name: "Robert Sophomore", login: "p4", photo: "images/robert.jpg", job: "Estudiante", url: "robert497.html" },
+            { id: 5, name: "Arthur Star", login: "p5", photo: "images/arthur.jpg", job: "Astrónomo", url: "arthur841.html" },
+            { id: 6, name: "Padre Andrew", login: "p6", photo: "images/andrew.jpg", job: "Sacerdote", url: "andrew637.html" }
+        ];
+
+        let selectedPlayer = null;
+
+        // Cargar vista inicial
+        function init() {
+            const grid = document.getElementById('character-grid');
+            players.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'char-card';
+                card.onclick = () => {
+                    const clickAudio = new Audio('audio/click.mp3');
+                    clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+                    openLogin(p);
+                };
+                card.innerHTML = `
+                    <img src="${p.photo}" class="char-photo" alt="Foto">
+                    <div class="char-info">
+                        <h3>${p.name}</h3>
+                        <p>${p.job}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Login de jugador
+        function openLogin(player) {
+            selectedPlayer = player;
+            document.getElementById('login-modal').classList.add('active');
+            document.getElementById('login-input').value = '';
+            document.getElementById('login-error').style.display = 'none';
+        }
+
+function checkPlayerLogin() {
+    const val = document.getElementById('login-input').value;
+    
+    // AQUÍ ESTÁ EL CAMBIO: Se añade .toLowerCase() a ambas variables
+    if (val.toLowerCase() === selectedPlayer.login.toLowerCase()) {
+        const correctAudio = new Audio('audio/correct.mp3');
+        correctAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+        
+        correctAudio.onended = () => {
+            window.location.href = selectedPlayer.url;
+        };
+        
+        setTimeout(() => {
+            window.location.href = selectedPlayer.url;
+        }, 1500);
+    } else {
+        const nopeAudio = new Audio('audio/nope.mp3');
+        nopeAudio.play().catch(e => console.log("Error al reproducir audio:", e));
+        document.getElementById('login-error').style.display = 'block';
+    }
+}
+
+        function closeModal(id) {
+            const clickAudio = new Audio('audio/click.mp3');
+            clickAudio.play().catch(e => console.log("Audio play prevented:", e));
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Permitir Enter para los inputs
+        document.getElementById('login-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPlayerLogin();
+        });
+
+        init();
+    </script>
+</body>
+</html>

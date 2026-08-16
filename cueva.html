@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cueva</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0b0b0b;
+            color: #e0e0e0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow: auto;
+        }
+
+        /* Estilo para el Pop-up de inicio */
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 2px solid #555;
+        }
+
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 1.5em;
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: 20px;
+        }
+        #start-btn:hover { background: #555; }
+
+        /* Estilo para el Pop-up de Clave de Reinicio */
+        #password-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 20000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #password-popup-box {
+            background: #1a1a1a;
+            border: 2px solid #555;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+            width: 320px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        #password-popup-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.5em;
+            color: #888;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #password-popup-close:hover {
+            color: #fff;
+        }
+
+        #password-popup h3 {
+            margin-top: 10px;
+            color: #e0e0e0;
+            font-size: 1.1em;
+        }
+
+        #password-popup input {
+            width: 85%;
+            padding: 10px;
+            margin-top: 15px;
+            background: #222;
+            border: 1px solid #555;
+            color: #fff;
+            font-family: inherit;
+            text-align: center;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        #password-popup button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 4px;
+            font-weight: bold;
+            width: 90%;
+        }
+
+        #password-popup button:hover {
+            background: #555;
+        }
+
+        #password-error-msg {
+            color: #ff4444;
+            font-size: 0.9em;
+            margin-top: 10px;
+            display: none;
+            font-weight: bold;
+        }
+
+        #main-layout {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            max-width: 1400px;
+            min-width: 1000px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        /* HUD Izquierdo */
+        #hud {
+            width: 280px;
+            background-color: #1a1a1a;
+            border-right: 2px solid #333;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hud-section {
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .hud-label {
+            font-size: 1.1em;
+            color: #888;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .hud-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .heart-icon {
+            color: #ff4444;
+            font-size: 1.2em;
+        }
+
+        .timer-icon {
+            color: #ffaa00;
+            font-size: 1.2em;
+        }
+
+        #ammo-img {
+            max-width: 30%;
+            height: auto;
+            border: 2px solid #333;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #ammo-img:active {
+            transform: scale(0.98);
+        }
+
+        .btn-reload {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .btn-reload:hover { background: #444; }
+
+        /* Contenedor Derecho (Escena + Controles debajo) */
+        #game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #050505;
+        }
+
+        /* Área Central (Escena / Imagen) */
+        #scene-container {
+            flex: 1;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-image: url('cave/lcr.jpg');
+            min-height: 400px;
+            cursor: crosshair;
+            overflow: hidden;
+        }
+
+        /* Hotspot para la palanca */
+#lever-hotspot {
+    display: none;
+    position: absolute;
+    /* Modifica estos valores según la posición real de la palanca en tu imagen */
+    top: 25%; 
+    left: 40%;
+    width: 15%;
+    height: 80%;
+    cursor: pointer;
+    z-index: 5;
+    /* Opcional para depurar: descomenta la siguiente línea para ver un recuadro rojo y saber dónde está exactamente el hotspot */
+    /* border: 2px solid red; */
+}
+
+        /* Efectos Visuales (Splashes) */
+        #blood-splash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(180, 0, 0, 0.2) 20%, rgba(120, 0, 0, 0.75) 90%);
+            pointer-events: none;
+            display: none;
+            z-index: 8;
+            box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.85);
+        }
+
+        @keyframes fallBlood {
+            0% { top: -100%; }
+            100% { top: 0%; }
+        }
+
+        #falling-blood {
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(220, 0, 0, 0.95), rgba(150, 0, 0, 0.85), rgba(90, 0, 0, 0.6));
+            pointer-events: none;
+            display: none;
+            z-index: 12;
+        }
+
+        .animate-falling-blood {
+            display: block !important;
+            animation: fallBlood 0.6s ease-in forwards;
+        }
+
+        #green-splash {
+            position: absolute;
+            width: 180px;
+            height: 140px;
+            background: radial-gradient(circle at 40% 50%, rgba(0, 255, 100, 0.9) 0%, rgba(0, 180, 50, 0.7) 40%, rgba(0, 100, 20, 0.4) 70%, transparent 100%);
+            clip-path: polygon(50% 10%, 65% 25%, 85% 20%, 75% 45%, 95% 60%, 70% 75%, 80% 95%, 50% 80%, 25% 90%, 35% 65%, 10% 55%, 30% 35%, 15% 15%, 40% 30%);
+            pointer-events: none;
+            display: none;
+            z-index: 6;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 80, 0.8));
+        }
+
+        #impact-img {
+            display: none;
+            position: absolute;
+            width: 40px;
+            height: auto;
+            pointer-events: none;
+            z-index: 8;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Objetos Coleccionables (Botiquín y Balas) */
+        #medpack-img, #balas-item-img {
+            display: none;
+            position: absolute;
+            width: 90px;
+            height: auto;
+            cursor: grab;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+        }
+
+        #medpack-img:active, #balas-item-img:active {
+            cursor: grabbing;
+        }
+
+        /* Monstruo Deep One */
+        #monster-img, #monster-img-2 {
+            display: none;
+            position: absolute;
+            width: 200px;
+            height: auto;
+            cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' stroke='%23ff0000' stroke-width='2' fill='none'/%3E%3Cline x1='12' y1='3' x2='12' y2='21' stroke='%23ff0000' stroke-width='2'/%3E%3Cline x1='3' y1='12' x2='21' y2='12' stroke='%23ff0000' stroke-width='2'/%3E%3C/svg%3E") 12 12, crosshair;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+            filter: brightness(0.7) sepia(100%) hue-rotate(60deg) saturate(300%) drop-shadow(0 0 8px rgba(0, 255, 0, 0.6));
+            transition: left 0.3s ease, transform 0.3s ease;
+        }
+
+        #monster-msg {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(180, 0, 0, 0.9);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 1.1em;
+            font-weight: bold;
+            display: none;
+            z-index: 7;
+            border: 1px solid #ff4444;
+        }
+
+        @keyframes pulseWeapon {
+            0% { transform: translateX(-50%) translateY(0px); }
+            50% { transform: translateX(-50%) translateY(-5px); }
+            100% { transform: translateX(-50%) translateY(0px); }
+        }
+
+        /* Mano del jugador con revólver (Estilo Shoot'em up) */
+        #player-weapon {
+            display: block;
+            position: absolute;
+            bottom: 0px;
+            left: 65%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: auto;
+            pointer-events: none;
+            z-index: 7;
+            filter: drop-shadow(0 -5px 5px rgba(0,0,0,0.5));
+            animation: pulseWeapon 2.2s ease-in-out infinite;
+        }
+
+        /* Mensaje de Fin / Alerta de Tiempo */
+        #overlay-alert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 8px;
+            border: 2px solid #ff4444;
+            text-align: center;
+            display: none;
+            max-width: 80%;
+            z-index: 15;
+        }
+
+        #overlay-alert h2 { color: #ff4444; margin-top: 0; }
+
+        /* Controles Dinámicos en 2 líneas debajo de la imagen */
+        #dynamic-controls {
+            background-color: #121212;
+            border-top: 2px solid #333;
+            padding: 8px 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            justify-items: center;
+            align-items: center;
+            min-height: 90px;
+        }
+
+        .btn-dir {
+            background-color: #222;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 1.1em;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 180px;
+        }
+
+        .btn-dir:hover {
+            background-color: #444;
+            border-color: #888;
+        }
+
+        .btn-dir:active {
+            background-color: #666;
+            transform: scale(0.95);
+        }
+
+        .pos-left { grid-column: 1; grid-row: 1; }
+        .pos-center { grid-column: 2; grid-row: 1; }
+        .pos-right { grid-column: 3; grid-row: 1; }
+        .pos-back { grid-column: 2; grid-row: 2; }
+
+        .btn-back {
+            background-color: #311;
+            border-color: #733;
+        }
+        .btn-back:hover {
+            background-color: #511;
+            border-color: #a44;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de inicio -->
+    <div id="start-screen">
+        <h2 style="color: #fff;">PULSA PARA EMPEZAR LA CUENTA ATRÁS</h2>
+        <button id="start-btn" onclick="iniciarJuego()">INICIAR</button>
+    </div>
+
+    <!-- Pop-up para la clave de reinicio -->
+    <div id="password-popup">
+        <div id="password-popup-box">
+            <span id="password-popup-close" onclick="cerrarPopupClave()">&times;</span>
+            <h3>Introduce la Clave</h3>
+		<input type="text" id="password-input" placeholder="Clave..." autocomplete="off" onkeydown="if(event.key === 'Enter') verificarClave()">
+            <button onclick="verificarClave()">Confirmar</button>
+            <div id="password-error-msg">Clave incorrecta</div>
+        </div>
+    </div>
+
+    <!-- Elementos de Audio -->
+    <audio id="click-audio" src="audio/click.mp3" preload="auto"></audio>
+    <audio id="click-lever-audio" src="audio/lever.mp3" preload="auto"></audio>
+    <audio id="bg-audio" src="audio/cave.mp3" loop preload="auto"></audio>
+    <audio id="monster-audio" src="audio/monster.mp3" preload="auto"></audio>
+    <audio id="attack-audio" src="audio/attack.mp3" preload="auto"></audio>
+    <audio id="herida-audio" src="audio/herida.mp3" preload="auto"></audio>
+    <audio id="disparo-audio" src="audio/disparo.mp3" preload="auto"></audio>
+    <audio id="empty-audio" src="audio/empty.mp3" preload="auto"></audio>
+    <audio id="recargar-audio" src="audio/recargar.mp3" preload="auto"></audio>
+    <audio id="footsteps-audio" src="audio/footsteps.mp3" preload="auto"></audio>
+    <audio id="pickup-audio" src="audio/pickup.mp3" preload="auto"></audio>
+    <audio id="success-audio" src="audio/success.mp3" preload="auto"></audio>
+    <audio id="failure-audio" src="audio/failure.mp3" preload="auto"></audio>
+    <audio id="restart-audio" src="audio/restart.mp3" preload="auto"></audio>
+    <audio id="nope-audio" src="audio/nope.mp3" preload="auto"></audio>
+
+    <div id="main-layout">
+        <!-- Columna Izquierda (HUD) -->
+        <aside id="hud">
+            <div class="hud-section">
+                <div class="hud-label">Tiempo restante</div>
+                <div class="hud-value">
+                    <span class="timer-icon">&#9201;</span>
+                    <span id="timer-display">05:00</span>
+                </div>
+            </div>
+
+            <div class="hud-section">
+                <div class="hud-label">Vida <span id="health-num-display">(10)</span></div>
+                <div class="hud-value">
+                    <span class="heart-icon">&#9829;</span>
+                    <div id="player-health" style="display: inline-flex; gap: 3px; align-items: center; margin-left: 5px;"></div>
+                </div>
+            </div>
+
+            <div class="hud-section">
+                <div class="hud-label">Balas <span id="ammo-num-display">(6)</span></div>
+                <div>
+                    <div style="font-size: 0.9em; margin-bottom: 5px; text-align: center;">Revólver</div>
+                    <img id="ammo-img" src="cave/cargador6.gif" alt="Cargador" onclick="disparar()">
+                </div>
+                <div style="margin-top: 15px;">
+                    <span style="font-size: 0.9em;">Tambores: <strong id="spare-drums">3</strong></span>
+                    <button class="btn-reload" onclick="recargar()">Recargar</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Área de Juego (Imagen + Controles debajo) -->
+        <div id="game-area">
+            <main id="scene-container">
+                <div id="blood-splash"></div>
+                <div id="falling-blood"></div>
+                <div id="green-splash"></div>
+                <img id="impact-img" src="cave/impact.gif" alt="Impacto">
+                <img id="medpack-img" src="cave/medpack.gif" alt="Botiquín" title="Botiquín" onclick="recogerMedpack(event)">
+                <img id="balas-item-img" src="cave/balas.gif" alt="Balas" title="Balas" onclick="recogerBalas(event)">
+                <div id="lever-hotspot" onclick="accionarPalanca(event)"></div>
+                <img id="monster-img" src="cave/deepone.gif" alt="Deep One" onclick="atacarMonstruo(event, 1)">
+                <img id="monster-img-2" src="cave/deepone.gif" alt="Deep One" onclick="atacarMonstruo(event, 2)">
+                <img id="player-weapon" src="cave/mano.gif" alt="Mano con revólver">
+                <div id="monster-msg"></div>
+                <div id="overlay-alert">
+                    <h2 id="alert-title">¡TIEMPO AGOTADO!</h2>
+                    <p id="alert-text">La cueva ha colapsado. No has conseguido escapar a tiempo.</p>
+                </div>
+            </main>
+
+            <!-- Botones dinámicos en dos líneas -->
+            <footer id="dynamic-controls">
+                <!-- Se inyectan por JS -->
+            </footer>
+        </div>
+    </div>
+            <!-- **************************************************** -->
+            <!-- **************************************************** -->
+            <!-- **************************************************** -->
+    <script>
+        let vida = 10;
+        let balas = 6;
+        let tambores = 3;
+        let tiempoRestante = 300;
+        let juegoTerminado = false;
+        let temporizadorIntervalo = null;
+        let mecanismoActivado = false; // Estado del mecanismo
+
+        let monsterActive = false;
+        let monsterCount = 0;
+        let monsterIntervalHandle = null;
+        let pantallaIdleSeconds = 0;
+
+        const laberinto = {
+            "inicio_huida": {
+                fondo: "cave/inicio.gif",
+                caminos: { izquierda: "a_1", centro: "b_1", derecha: "c_1" },
+                permiteAtras: false
+            },
+
+            "a_1": {
+                fondo: "cave/lr.jpg",
+                caminos: { izquierda: "a_2a", derecha: "a_2b" },
+                permiteAtras: true
+            },
+
+            "a_2a": {
+                fondo: "cave/l.jpg",
+                caminos: { izquierda: "a_3a" },
+                permiteAtras: true
+            },
+
+            "a_3a": {
+                fondo: "cave/none_pico.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+
+            "a_2b": {
+                fondo: "cave/r.jpg",
+                caminos: { derecha: "a_3b" },
+                permiteAtras: true
+            },
+
+            "a_3b": {
+                fondo: "cave/lcr.jpg",
+                caminos: { izquierda: "a_4a", centro: "a_4b", derecha: "a_4c" },
+                permiteAtras: true
+            },
+
+            "a_4a": {
+                fondo: "cave/c.jpg",
+                caminos: { centro: "a_5a" },
+                permiteAtras: true
+            },
+
+            "a_5a": {
+                fondo: "cave/none_farol.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+            "a_4b": {
+                fondo: "cave/none_pala.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+
+            "a_4c": {
+                fondo: "cave/lc.jpg",
+                caminos: { izquierda: "pasillo_rejas", centro: "a_5c" },
+                permiteAtras: true
+            },
+
+            "pasillo_rejas": {
+                fondo: "cave/rejas_off.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+            "a_5c": {
+                fondo: "cave/none.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+
+
+
+            "b_1": {
+                fondo: "cave/c.jpg",
+                caminos: { centro: "b_2" },
+                permiteAtras: true
+            },
+
+            "b_2": {
+                fondo: "cave/r.jpg",
+                caminos: { derecha: "b_3" },
+                permiteAtras: true
+            },
+
+            "b_3": {
+                fondo: "cave/none_esqueleto.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+
+
+
+
+            "c_1": {
+                fondo: "cave/cr.jpg",
+                caminos: { centro: "c_2a", derecha: "c_2b" },
+                permiteAtras: true
+            },
+
+            "c_2a": {
+                fondo: "cave/l.jpg",
+                caminos: { izquierda: "c_3a" },
+                permiteAtras: true
+            },
+
+            "c_2b": {
+                fondo: "cave/r.jpg",
+                caminos: { derecha: "c_3b" },
+                permiteAtras: true
+            },
+
+            "c_3a": {
+                fondo: "cave/lc.jpg",
+                caminos: { izquierda: "c_4a", centro: "c_4b" },
+                permiteAtras: true
+            },
+
+            "c_3b": {
+                fondo: "cave/none.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+
+            "c_4a": {
+                fondo: "cave/none_profundo.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+            "c_4b": {
+                fondo: "cave/c.jpg",
+                caminos: { centro: "sala_palanca" },
+                permiteAtras: true
+            },
+
+
+
+
+
+
+            "sala_palanca": {
+                fondo: "cave/palanca_off.jpg",
+                caminos: {},
+                permiteAtras: true
+            },
+
+            "puerta": {
+                fondo: "cave/salida.gif",
+                caminos: {},
+                permiteAtras: true
+            }
+        };
+
+        let historial = ["inicio_huida"];
+        let nodoActualKey = "inicio_huida";
+
+        function actualizarVidaUI() {
+            const container = document.getElementById("player-health");
+            if (!container) return;
+            container.innerHTML = "";
+
+            const healthNumDisplay = document.getElementById("health-num-display");
+            if (healthNumDisplay) {
+                healthNumDisplay.innerText = `(${vida})`;
+            }
+
+            let color = "#00ff00"; // Verde por defecto
+            if (vida <= 3) {
+                color = "#ff4444"; // Rojo
+            } else if (vida <= 5) {
+                color = "#ffa500"; // Naranja
+            } else if (vida <= 7) {
+                color = "#ffff00"; // Amarillo
+            }
+
+            for (let i = 0; i < vida; i++) {
+                const palito = document.createElement("div");
+                palito.style.width = "6px";
+                palito.style.height = "16px";
+                palito.style.backgroundColor = color;
+                palito.style.display = "inline-block";
+                palito.style.marginRight = "2px";
+                container.appendChild(palito);
+            }
+        }
+
+        function actualizarArmamentoUI() {
+            const ammoNumDisplay = document.getElementById("ammo-num-display");
+            if (ammoNumDisplay) {
+                ammoNumDisplay.innerText = `(${balas})`;
+            }
+            const spareDrums = document.getElementById("spare-drums");
+            if (spareDrums) {
+                spareDrums.innerText = tambores;
+            }
+            const ammoImg = document.getElementById("ammo-img");
+            if (ammoImg) {
+                ammoImg.src = `cave/cargador${balas}.gif`;
+            }
+        }
+
+        function reiniciarHuida() {
+            const restartAudio = document.getElementById("restart-audio");
+            if (restartAudio) {
+                restartAudio.currentTime = 0;
+                restartAudio.play().catch(e => console.log(e));
+                setTimeout(() => {
+                    location.reload();
+                }, 600);
+            } else {
+                location.reload();
+            }
+        }
+
+        function abrirPopupClave() {
+            const clickAudio = document.getElementById("click-audio");
+            if (clickAudio) {
+                clickAudio.currentTime = 0;
+                clickAudio.play().catch(e => console.log(e));
+            }
+            const popup = document.getElementById("password-popup");
+            const input = document.getElementById("password-input");
+            const errorMsg = document.getElementById("password-error-msg");
+            if (input) input.value = "";
+            if (errorMsg) errorMsg.style.display = "none";
+            if (popup) popup.style.display = "flex";
+        }
+
+        function cerrarPopupClave() {
+            const clickAudio = document.getElementById("click-audio");
+            if (clickAudio) {
+                clickAudio.currentTime = 0;
+                clickAudio.play().catch(e => console.log(e));
+            }
+            const popup = document.getElementById("password-popup");
+            if (popup) popup.style.display = "none";
+        }
+
+        function verificarClave() {
+            const input = document.getElementById("password-input");
+            const errorMsg = document.getElementById("password-error-msg");
+            if (!input) return;
+            const valor = input.value.trim();
+            if (valor === "lazarus" || valor === "LAZARUS" || valor === "Lazarus") {
+                reiniciarHuida();
+            } else {
+                const nopeAudio = document.getElementById("nope-audio");
+                if (nopeAudio) {
+                    nopeAudio.currentTime = 0;
+                    nopeAudio.play().catch(e => console.log(e));
+                }
+                if (errorMsg) {
+                    errorMsg.innerText = "Clave incorrecta";
+                    errorMsg.style.display = "block";
+                }
+            }
+        }
+
+        function mostrarImpacto(e) {
+            const container = document.getElementById("scene-container");
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const impact = document.getElementById("impact-img");
+            if (impact) {
+                impact.style.left = x + "px";
+                impact.style.top = y + "px";
+                impact.style.display = "block";
+                setTimeout(() => {
+                    impact.style.display = "none";
+                }, 250);
+            }
+        }
+
+        function recogerMedpack(e) {
+            if (juegoTerminado) return;
+            if (e) e.stopPropagation();
+            const pickupAudio = document.getElementById("pickup-audio");
+            if (pickupAudio) {
+                pickupAudio.currentTime = 0;
+                pickupAudio.play().catch(err => console.log(err));
+            }
+            document.getElementById("medpack-img").style.display = "none";
+            vida = Math.min(10, vida + 5);
+            actualizarInterfaz();
+        }
+
+        function recogerBalas(e) {
+            if (juegoTerminado) return;
+            if (e) e.stopPropagation();
+            const pickupAudio = document.getElementById("pickup-audio");
+            if (pickupAudio) {
+                pickupAudio.currentTime = 0;
+                pickupAudio.play().catch(err => console.log(err));
+            }
+            document.getElementById("balas-item-img").style.display = "none";
+            tambores += 1;
+            actualizarInterfaz();
+        }
+
+        function accionarPalanca(e) {
+            if (juegoTerminado) return;
+            if (e) e.stopPropagation();
+            mecanismoActivado = !mecanismoActivado;
+            const clickAudio = document.getElementById("click-lever-audio");
+            if (clickAudio) {
+                clickAudio.currentTime = 0;
+                clickAudio.play().catch(e => console.log(e));
+            }
+            actualizarInterfaz();
+        }
+
+function ocultarItems() {
+    const medpack = document.getElementById("medpack-img");
+    if (medpack) medpack.style.display = "none";
+    const balasImg = document.getElementById("balas-item-img");
+    if (balasImg) balasImg.style.display = "none";
+    // Eliminamos la línea de lever-hotspot para que no lo oculte por error
+}
+
+        function intentarSpawnItems() {
+            ocultarItems();
+            if (nodoActualKey === "inicio_huida" || nodoActualKey === "puerta" || juegoTerminado) return;
+
+            if (vida <= 4) {
+                if (Math.random() < 0.5) {
+                    const medpack = document.getElementById("medpack-img");
+                    medpack.style.top = (65 + Math.random() * 20) + "%";
+                    medpack.style.left = (20 + Math.random() * 60) + "%";
+                    medpack.style.display = "block";
+                }
+            }
+
+            if (tambores === 1 || tambores === 0) {
+                if (Math.random() < 0.5) {
+                    const balasImg = document.getElementById("balas-item-img");
+                    balasImg.style.top = (65 + Math.random() * 20) + "%";
+                    balasImg.style.left = (20 + Math.random() * 60) + "%";
+                    balasImg.style.display = "block";
+                }
+            }
+        }
+
+        function iniciarJuego() {
+            const clickAudio = document.getElementById("click-audio");
+            if (clickAudio) clickAudio.play().catch(e => console.log(e));
+
+            document.getElementById('start-screen').style.display = 'none';
+            const bgAudio = document.getElementById("bg-audio");
+            if (bgAudio) {
+                bgAudio.play().catch(e => console.log("Audio play blocked", e));
+            }
+            iniciarTemporizador();
+        }
+
+        function iniciarTemporizador() {
+            temporizadorIntervalo = setInterval(() => {
+                if (juegoTerminado) return;
+
+                tiempoRestante--;
+                actualizarRelojUI();
+
+		if (nodoActualKey !== "inicio_huida" && nodoActualKey !== "puerta" && nodoActualKey !== "sala_palanca") {
+                    if (!monsterActive) {
+                        pantallaIdleSeconds++;
+                        if (pantallaIdleSeconds >= 15) {
+                            pantallaIdleSeconds = 0;
+                            spawnMonstruo(1);
+                        }
+                    } else {
+                        pantallaIdleSeconds = 0;
+                    }
+                } else {
+                    pantallaIdleSeconds = 0;
+                }
+
+                if (tiempoRestante <= 0) {
+                    clearInterval(temporizadorIntervalo);
+                    juegoTerminado = true;
+                    ocultarMonstruo();
+
+                    const fallingBlood = document.getElementById("falling-blood");
+                    if (fallingBlood) {
+                        fallingBlood.classList.add("animate-falling-blood");
+                    }
+
+                    const failureAudio = document.getElementById("failure-audio");
+                    if (failureAudio) {
+                        failureAudio.currentTime = 0;
+                        failureAudio.play().catch(e => console.log(e));
+                    }
+
+                    setTimeout(() => {
+                        mostrarAlertaFin("¡TIEMPO AGOTADO!", "La cueva ha colapsado. No has conseguido huir.");
+                    }, 500);
+                }
+            }, 1000);
+        }
+
+        function actualizarRelojUI() {
+            const minutos = Math.floor(tiempoRestante / 60);
+            const segundos = tiempoRestante % 60;
+            const formatoMin = String(minutos).padStart(2, '0');
+            const formatoSeg = String(segundos).padStart(2, '0');
+            document.getElementById("timer-display").innerText = `${formatoMin}:${formatoSeg}`;
+        }
+
+        function mostrarAlertaFin(titulo, texto) {
+            document.getElementById("alert-title").innerText = titulo;
+            document.getElementById("alert-text").innerText = texto;
+            document.getElementById("overlay-alert").style.display = "block";
+            document.getElementById("dynamic-controls").innerHTML = `<button class="btn-dir pos-center" style="grid-column: 2; max-width: 100%; background: #511;" onclick="abrirPopupClave()">Reiniciar Huida</button>`;
+        }
+
+        function intentarSpawnMonstruo() {
+            ocultarMonstruo();
+
+	    if (nodoActualKey === "inicio_huida" || nodoActualKey === "puerta" || nodoActualKey === "sala_palanca" || juegoTerminado) return;
+
+            const rand = Math.random();
+            if (rand < 0.2) {
+                spawnMonstruo(2);
+            } else if (rand < 0.7) {
+                spawnMonstruo(1);
+            }
+        }
+
+        function spawnMonstruo(cantidad = 1) {
+            monsterCount = cantidad;
+            monsterActive = true;
+            actualizarInterfaz();
+
+            const audio = document.getElementById("monster-audio");
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(e => console.log("Audio play blocked", e));
+            }
+
+            const monsterImg1 = document.getElementById("monster-img");
+            const monsterImg2 = document.getElementById("monster-img-2");
+            
+            const randomTop1 = 65 + Math.random() * 20;
+            const randomLeft1 = 20 + Math.random() * 35;
+
+            monsterImg1.style.top = randomTop1 + "%";
+            monsterImg1.style.left = randomLeft1 + "%";
+            
+            let escala1 = 0.8 + ((randomTop1 - 65) / 20) * 0.6;
+            let flip1 = randomLeft1 > 50 ? "scaleX(-1)" : "scaleX(1)";
+            monsterImg1.style.transform = `translate(-50%, -50%) ${flip1} scale(${escala1})`;
+            monsterImg1.style.display = "block";
+
+            if (monsterCount > 1) {
+                const randomTop2 = 65 + Math.random() * 20;
+                const randomLeft2 = 60 + Math.random() * 20;
+
+                monsterImg2.style.top = randomTop2 + "%";
+                monsterImg2.style.left = randomLeft2 + "%";
+                
+                let escala2 = 0.8 + ((randomTop2 - 65) / 20) * 0.6;
+                let flip2 = randomLeft2 > 50 ? "scaleX(-1)" : "scaleX(1)";
+                monsterImg2.style.transform = `translate(-50%, -50%) ${flip2} scale(${escala2})`;
+                monsterImg2.style.display = "block";
+            } else {
+                monsterImg2.style.display = "none";
+            }
+
+            monsterIntervalHandle = setInterval(() => {
+                if (monsterCount > 0 && !juegoTerminado) {
+                    const attackAudio = document.getElementById("attack-audio");
+                    if (attackAudio) {
+                        attackAudio.currentTime = 0;
+                        attackAudio.play().catch(e => console.log("Audio play blocked", e));
+                    }
+                    const heridaAudio = document.getElementById("herida-audio");
+                    if (heridaAudio) {
+                        heridaAudio.currentTime = 0;
+                        heridaAudio.play().catch(e => console.log("Audio play blocked", e));
+                    }
+
+                    const bloodSplash = document.getElementById("blood-splash");
+                    if (bloodSplash) {
+                        bloodSplash.style.display = "block";
+                        setTimeout(() => {
+                            bloodSplash.style.display = "none";
+                        }, 400);
+                    }
+
+                    vida -= monsterCount;
+                    if (vida < 0) vida = 0;
+                    actualizarInterfaz();
+
+                    const container = document.getElementById("scene-container");
+                    const containerWidth = container.clientWidth;
+                    const monsterWidth = 120;
+                    const halfWidth = monsterWidth / 2;
+
+                    [document.getElementById("monster-img"), document.getElementById("monster-img-2")].forEach((mImg) => {
+                        if (mImg && mImg.style.display !== "none" && mImg.style.left) {
+                            let currentLeftPx = (parseFloat(mImg.style.left) / 100) * containerWidth;
+                            let direction = Math.random() < 0.5 ? -1 : 1;
+                            let newLeftPx = currentLeftPx + (direction * monsterWidth);
+                            
+                            newLeftPx = Math.max(halfWidth, Math.min(containerWidth - halfWidth, newLeftPx));
+                            
+                            let newLeftPct = (newLeftPx / containerWidth * 100);
+                            mImg.style.left = newLeftPct + "%";
+
+                            let currentTop = parseFloat(mImg.style.top);
+                            let escalaActual = 0.8 + ((currentTop - 65) / 20) * 0.6;
+                            let flip = newLeftPct > 50 ? "scaleX(-1)" : "scaleX(1)";
+                            mImg.style.transform = `translate(-50%, -50%) ${flip} scale(${escalaActual})`;
+                        }
+                    });
+
+                    if (vida <= 0) {
+                        juegoTerminado = true;
+                        ocultarMonstruo();
+
+                        const fallingBlood = document.getElementById("falling-blood");
+                        if (fallingBlood) {
+                            fallingBlood.classList.add("animate-falling-blood");
+                        }
+
+                        const failureAudio = document.getElementById("failure-audio");
+                        if (failureAudio) {
+                            failureAudio.currentTime = 0;
+                            failureAudio.play().catch(e => console.log(e));
+                        }
+
+                        setTimeout(() => {
+                            mostrarAlertaFin("¡HAS MUERTO!", "Los profundos te han devorado.");
+                        }, 500);
+                    }
+                }
+            }, 1000);
+        }
+
+        function ocultarMonstruo() {
+            monsterCount = 0;
+            monsterActive = false;
+            pantallaIdleSeconds = 0;
+            if (monsterIntervalHandle) {
+                clearInterval(monsterIntervalHandle);
+                monsterIntervalHandle = null;
+            }
+            const monsterImg = document.getElementById("monster-img");
+            if (monsterImg) monsterImg.style.display = "none";
+            const monsterImg2 = document.getElementById("monster-img-2");
+            if (monsterImg2) monsterImg2.style.display = "none";
+            const msg = document.getElementById("monster-msg");
+            if (msg) msg.style.display = "none";
+        }
+
+        function atacarMonstruo(e, monsterId = 1) {
+            if (juegoTerminado) return;
+            if (e) e.stopPropagation();
+
+            if (balas > 0) {
+                balas--;
+                mostrarImpacto(e);
+
+                const disparoAudio = document.getElementById("disparo-audio");
+                if (disparoAudio) {
+                    disparoAudio.currentTime = 0;
+                    disparoAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+
+                let targetImg = (monsterId === 2) ? document.getElementById("monster-img-2") : document.getElementById("monster-img");
+                const greenSplash = document.getElementById("green-splash");
+                if (greenSplash && targetImg) {
+                    greenSplash.style.top = targetImg.style.top;
+                    greenSplash.style.left = targetImg.style.left;
+                    greenSplash.style.display = "block";
+                    setTimeout(() => {
+                        greenSplash.style.display = "none";
+                    }, 400);
+                }
+
+                if (targetImg) targetImg.style.display = "none";
+                monsterCount--;
+
+                if (monsterCount <= 0) {
+                    ocultarMonstruo();
+                }
+                actualizarInterfaz();
+            } else {
+                const emptyAudio = document.getElementById("empty-audio");
+                if (emptyAudio) {
+                    emptyAudio.currentTime = 0;
+                    emptyAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+                const msg = document.getElementById("monster-msg");
+                msg.innerText = "TIENES QUE RECARGAR";
+                msg.style.display = "block";
+                setTimeout(() => {
+                    if (msg) msg.style.display = "none";
+                }, 2000);
+            }
+        }
+
+        document.getElementById("scene-container").addEventListener("click", function(e) {
+            if (juegoTerminado) return;
+
+            if (e.target.id === "scene-container") {
+                if (balas > 0) {
+                    balas--;
+                    mostrarImpacto(e);
+                    const disparoAudio = document.getElementById("disparo-audio");
+                    if (disparoAudio) {
+                        disparoAudio.currentTime = 0;
+                        disparoAudio.play().catch(err => console.log("Audio play blocked", err));
+                    }
+                    actualizarInterfaz();
+                } else {
+                    const emptyAudio = document.getElementById("empty-audio");
+                    if (emptyAudio) {
+                        emptyAudio.currentTime = 0;
+                        emptyAudio.play().catch(e => console.log("Audio play blocked", e));
+                    }
+                    const msg = document.getElementById("monster-msg");
+                    msg.innerText = "TIENES QUE RECARGAR";
+                    msg.style.display = "block";
+                    setTimeout(() => {
+                        if (msg) msg.style.display = "none";
+                    }, 2000);
+                }
+            }
+        });
+
+        function actualizarInterfaz() {
+            if (juegoTerminado) return;
+
+            // Logica especial pasillo_rejas
+            if (nodoActualKey === "pasillo_rejas") {
+                if (mecanismoActivado) {
+                    laberinto["pasillo_rejas"].fondo = "cave/rejas_on.jpg";
+                    laberinto["pasillo_rejas"].caminos = { centro: "puerta" };
+                } else {
+                    laberinto["pasillo_rejas"].fondo = "cave/rejas_off.jpg";
+                    laberinto["pasillo_rejas"].caminos = {};
+                }
+            }
+
+            // Logica especial sala_palanca
+            if (nodoActualKey === "sala_palanca") {
+                laberinto["sala_palanca"].fondo = mecanismoActivado ? "cave/palanca_on.jpg" : "cave/palanca_off.jpg";
+                const leverHotspot = document.getElementById("lever-hotspot");
+                if (leverHotspot) leverHotspot.style.display = "block";
+            } else {
+                const leverHotspot = document.getElementById("lever-hotspot");
+                if (leverHotspot) leverHotspot.style.display = "none";
+            }
+
+            const nodo = laberinto[nodoActualKey];
+            document.getElementById("scene-container").style.backgroundImage = `url('${nodo.fondo}')`;
+
+            actualizarVidaUI();
+            actualizarArmamentoUI();
+
+            if (nodoActualKey === "puerta") {
+                clearInterval(temporizadorIntervalo);
+                juegoTerminado = true;
+                ocultarMonstruo();
+                ocultarItems();
+                const successAudio = document.getElementById("success-audio");
+                if (successAudio) {
+                    successAudio.currentTime = 0;
+                    successAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+                const minutosUsados = Math.floor((300 - tiempoRestante) / 60);
+                const segundosUsados = (300 - tiempoRestante) % 60;
+                mostrarAlertaFin("¡HAS HUIDA CON ÉXITO!", `¡Has escapado de la cueva en ${minutosUsados} minutos y ${segundosUsados} segundos! Sobreviviste a tiempo. Escribe al máster en privado por Telegram la palabra EUREKA.`);
+                return;
+            }
+
+            const controlsContainer = document.getElementById("dynamic-controls");
+            controlsContainer.innerHTML = "";
+
+            if (monsterActive) {
+                controlsContainer.innerHTML = `<div style="grid-column: 1 / span 3; text-align: center; color: #ff4444; font-weight: bold; font-size: 1.1em;">¡UN MONSTRUO BLOQUEA EL CAMINO! ¡DISPÁRALE PARA CONTINUAR!</div>`;
+                return;
+            }
+
+            const caminos = nodo.caminos;
+
+            if (caminos.izquierda) {
+                controlsContainer.innerHTML += `<button class="btn-dir pos-left" onclick="mover('izquierda')">▲ Izquierda</button>`;
+            }
+            if (caminos.centro) {
+                controlsContainer.innerHTML += `<button class="btn-dir pos-center" onclick="mover('centro')">▲ Centro</button>`;
+            }
+            if (caminos.derecha) {
+                controlsContainer.innerHTML += `<button class="btn-dir pos-right" onclick="mover('derecha')">▲ Derecha</button>`;
+            }
+
+            if (nodo.permiteAtras && historial.length > 1) {
+                controlsContainer.innerHTML += `<button class="btn-dir btn-back pos-back" onclick="mover('atras')">▼ Atrás</button>`;
+            }
+        }
+
+        function mover(dir) {
+            if (juegoTerminado || monsterActive) return;
+            const nodo = laberinto[nodoActualKey];
+
+            pantallaIdleSeconds = 0;
+
+            if (dir === 'atras') {
+                if (historial.length > 1) {
+                    historial.pop();
+                    nodoActualKey = historial[historial.length - 1];
+                    ocultarMonstruo();
+                    ocultarItems();
+                    
+                    const footstepsAudio = document.getElementById("footsteps-audio");
+                    if (footstepsAudio) {
+                        footstepsAudio.currentTime = 0;
+                        footstepsAudio.play().catch(e => console.log("Audio play blocked", e));
+                    }
+
+                    actualizarInterfaz();
+                    intentarSpawnItems();
+                }
+                return;
+            }
+
+            let siguiente = null;
+            if (dir === 'izquierda') siguiente = nodo.caminos.izquierda;
+            if (dir === 'centro') siguiente = nodo.caminos.centro;
+            if (dir === 'derecha') siguiente = nodo.caminos.derecha;
+
+            if (siguiente && typeof siguiente === 'string') {
+                historial.push(siguiente);
+                nodoActualKey = siguiente;
+                ocultarItems();
+                
+                const footstepsAudio = document.getElementById("footsteps-audio");
+                if (footstepsAudio) {
+                    footstepsAudio.currentTime = 0;
+                    footstepsAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+
+                actualizarInterfaz();
+                intentarSpawnMonstruo();
+                intentarSpawnItems();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (juegoTerminado || monsterActive) return;
+            const nodo = laberinto[nodoActualKey];
+            if (e.key === 'ArrowLeft' && nodo.caminos.izquierda) {
+                mover('izquierda');
+            } else if (e.key === 'ArrowUp' && nodo.caminos.centro) {
+                mover('centro');
+            } else if (e.key === 'ArrowRight' && nodo.caminos.derecha) {
+                mover('derecha');
+            } else if (e.key === 'ArrowDown' && nodo.permiteAtras && historial.length > 1) {
+                mover('atras');
+            }
+        });
+
+        function disparar() {
+            if (juegoTerminado || monsterActive) return;
+            if (balas > 0) {
+                balas--;
+                const disparoAudio = document.getElementById("disparo-audio");
+                if (disparoAudio) {
+                    disparoAudio.currentTime = 0;
+                    disparoAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+                actualizarInterfaz();
+            } else {
+                const emptyAudio = document.getElementById("empty-audio");
+                if (emptyAudio) {
+                    emptyAudio.currentTime = 0;
+                    emptyAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+                const msg = document.getElementById("monster-msg");
+                msg.innerText = "TIENES QUE RECARGAR";
+                msg.style.display = "block";
+                setTimeout(() => {
+                    if (msg) msg.style.display = "none";
+                }, 2000);
+            }
+        }
+
+        function recargar() {
+            if (juegoTerminado) return;
+            
+            if (balas > 0) {
+                const msg = document.getElementById("monster-msg");
+                msg.innerText = "RECARGA CUANDO TENGAS EL TAMBOR VACÍO";
+                msg.style.display = "block";
+                setTimeout(() => {
+                    if (msg) msg.style.display = "none";
+                }, 2000);
+                return;
+            }
+
+            if (tambores > 0 && balas === 0) {
+                tambores--;
+                balas = 6;
+                const recargarAudio = document.getElementById("recargar-audio");
+                if (recargarAudio) {
+                    recargarAudio.currentTime = 0;
+                    recargarAudio.play().catch(e => console.log("Audio play blocked", e));
+                }
+                actualizarInterfaz();
+            }
+        }
+
+        window.onload = () => {
+            history.pushState(null, null, location.href);
+            window.addEventListener('popstate', function () {
+                history.pushState(null, null, location.href);
+            });
+            actualizarInterfaz();
+        };
+
+    </script>
+</body>
+</html>
